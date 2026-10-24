@@ -1,0 +1,66 @@
+
+> faithful-native-ui-dev@1.0.0 test
+> python3 tools/build.py --check && node tools/validate.mjs
+
+PASS: bundle matches all four source modules and the initializer
+PASS compile: src/FaithfulAssets.luau
+PASS compile: src/FaithfulMain.client.luau
+PASS compile: src/FaithfulTheme.luau
+PASS compile: src/FaithfulUI.luau
+PASS compile: src/FaithfulVFX.luau
+PASS compile: Faithful Exploit
+PASS compile: tests/StudioSmoke.client.luau
+PASS: entrance completes
+PASS: only five pages, Home active
+PASS: native ScreenGui hierarchy
+PASS: default page has layout only; no gameplay controls
+PASS: background transparency is 0.78
+PASS: asset placeholders and numeric IDs
+PASS: loaded background title is not duplicated
+PASS: Ultra uses bounded pools and one loop
+PASS: unconfigured smoke has no fake asset
+PASS: mist runs with restrained opacity after load
+PASS: border never lights more than two adjoining segments
+PASS: rapid navigation keeps latest request
+PASS: navigation restores alpha and position
+PASS: 30 interrupted hide/open cycles recover
+PASS: no pooled GUI allocation growth
+PASS: hide stops loop and shows reopen
+PASS: counter pauses while hidden
+PASS: no hidden tweens or timer tasks
+PASS: launcher activation during drag cannot reopen
+PASS: launcher release after dragging cannot reopen
+PASS: launcher reopens
+PASS: Balanced budget
+PASS: Minimal has no ambient loop
+PASS: reduced motion stops ambient animation
+PASS: system reduced motion is respected
+PASS: system setting change resumes ambient effects
+PASS: close opens confirmation
+PASS: cancel retains window
+PASS: confirmed close remains reopenable
+PASS: responsive bounds 360x640
+PASS: responsive bounds 844x390
+PASS: responsive bounds 1280x800
+PASS: responsive bounds 1920x1080
+PASS: touch window drag and release
+PASS: logo drag detaches independently
+PASS: focus loss releases drag and detached logo stays put
+PASS: notifications reuse one object and cancel prior timeout
+PASS: hide dismisses modal without executing callback
+PASS: hide cancels pending tooltip delay
+PASS: hidden notifications and confirmations remain inactive
+PASS: reinitialization cleans previous owned instance
+PASS: singleton ScreenGui
+PASS: destroy leaves zero connections, tweens and tasks
+PASS: opt-in showcase creates reusable controls
+PASS: toggle interaction changes local state once
+PASS: slider rounds and clamps
+PASS: slider lower bound
+PASS: dropdown selection closes list
+PASS: text cap preserves UTF-8 characters
+PASS: quality switches reuse pool
+PASS: external ScreenGui destruction cleans integration
+PASS: yielding preload is tracked
+PASS: destroy cancels yielding preload
+TOTAL 53 assertions passed in mocked Luau runtime (not Roblox Studio).

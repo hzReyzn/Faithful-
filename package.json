@@ -1,0 +1,11 @@
+{
+  "name": "faithful-native-ui-dev",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "python3 tools/build.py",
+    "test": "python3 tools/build.py --check && node tools/validate.mjs"
+  },
+  "devDependencies": { "luau-web": "1.5.1" }
+}

@@ -1,0 +1,30 @@
+{
+  "repository": "hzReyzn/Faithful-",
+  "branch": "main",
+  "base_commit": "c4a030b3777e3d6bcf940fea1bc115ddd33fa5dc",
+  "publication_status": "approved_for_publication",
+  "primary_file": {
+    "path": "Faithful Exploit",
+    "previous_blob_sha": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+    "sha256": "86757f1eeb5d83df3467f6c5407600287b1a1be36ffabee0fd903de4bfc5fcf5"
+  },
+  "preserve": [
+    "README.md"
+  ],
+  "add": [
+    "src/",
+    "assets/",
+    "tools/",
+    "tests/",
+    "FAITHFUL_STUDIO.md",
+    "VALIDATION.md",
+    "PUBLISH_PLAN.json",
+    "package.json",
+    "package-lock.json",
+    ".gitignore"
+  ],
+  "reference_repository": "hzReyzn/Experimental",
+  "reference_changes": false,
+  "recheck_remote_before_write": true,
+  "authorization": "User explicitly approved publication of the prepared version and supporting files."
+}
