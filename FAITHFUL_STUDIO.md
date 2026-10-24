@@ -7,7 +7,7 @@ Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propi
 - La tercera imagen guía la distribución: cabecera, navegación izquierda, contenido derecho, bordes finos, arcos y detalles góticos discretos. Se reconstruye con objetos nativos. No se coloca la captura como fondo porque contiene textos y opciones que se pidieron eliminar.
 - La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda es el logo original con transparencia.
 - Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Las páginas contienen su título y espacio limpio; no hay Movement, Player, Protection, Utilities ni funciones de juego.
-- El título de cabecera se oculta cuando carga el fondo que ya contiene FAITHFUL. En pantallas estrechas se priorizan logo, reloj y botones.
+- El título de cabecera se oculta desde que se asigna el fondo que ya contiene FAITHFUL, incluso si un ejecutor no informa `IsLoaded`. No se superpone el sigilo nativo al logo original ni al botón de reapertura.
 - La ventana predeterminada pasa a **940 × 528** (aproximadamente 16:9), manteniendo adaptación a pantallas pequeñas.
 - El fondo usa **0.38** de `ImageTransparency` (62% opacidad) para que la ilustración resulte visible, sin modificar los píxeles del PNG.
 - Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar y continúa al reabrir. Una sesión nueva comienza en cero.

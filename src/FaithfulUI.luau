@@ -263,7 +263,10 @@ function UI:_Layout()
 	self.Content.Position = UDim2.fromOffset(sidebar + 20, layout.Header + 14)
 	self.Content.Size = UDim2.new(1, -sidebar - 38, 1, -layout.Header - 30)
 	self.PageTitle.TextSize = compact and 28 or 34
-	self.Brand.Visible = w >= 520 and not (self.Background.Image ~= "" and self.Assets.BackgroundContainsTitle and self.Background.IsLoaded)
+	-- Custom-asset URIs may render correctly without reporting IsLoaded. When the
+	-- supplied background already includes its own wordmark, never stack a
+	-- second FAITHFUL title on top of it after assigning the image.
+	self.Brand.Visible = w >= 520 and not (self.Background.Image ~= "" and self.Assets.BackgroundContainsTitle)
 	for _, record in pairs(self.Navigation) do
 		record.Label.Position = UDim2.fromOffset(compact and 36 or 52, 0)
 		record.Label.Size = UDim2.new(1, compact and -38 or -58, 1, 0)
@@ -628,12 +631,10 @@ function UI:_Build()
 	end
 	self.Logo = self:Make("ImageButton", self.Root, { Name = "DraggableLogo", Size = UDim2.fromOffset(layout.LogoSize, layout.LogoSize),
 		Image = self.Assets.Resolve(self.Assets.Logo), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 60 }, "logo")
-	self.LogoFallback = self:Icon(self.Logo, "Sigil", UDim2.fromOffset(8, 4), 38, colors.Silver)
 	self.Launcher = self:Make("ImageButton", self.Root, { Name = "Reopen", Size = UDim2.fromOffset(52, 52),
 		Image = self.Assets.Resolve(self.Assets.Logo), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 61,
 		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.1 })
 	self:Corner(self.Launcher, 8); self:Stroke(self.Launcher, colors.Crimson, 0.2)
-	self.LauncherFallback = self:Icon(self.Launcher, "Sigil", UDim2.fromOffset(7, 6), 38, colors.Silver)
 	self.TooltipBox = self:Make("TextLabel", self.Root, { Name = "Tooltip", Visible = false, Size = UDim2.fromOffset(220, 42),
 		BackgroundColor3 = colors.Charcoal, BackgroundTransparency = 0.02, TextWrapped = true, TextSize = 12, ZIndex = 180 })
 	self:Corner(self.TooltipBox, 5); self:Stroke(self.TooltipBox, colors.Metal, 0.3)
@@ -702,14 +703,8 @@ function UI:_Bind()
 	end)
 	self:Connect(Input.WindowFocusReleased, function() self:_EndPointer(); self.TooltipBox.Visible = false end)
 	self:Connect(self.Root:GetPropertyChangedSignal("AbsoluteSize"), function() self:_Layout() end)
+	self:Connect(self.Background:GetPropertyChangedSignal("Image"), function() self:_Layout() end)
 	self:Connect(self.Background:GetPropertyChangedSignal("IsLoaded"), function() self:_Layout() end)
-	local function logoLoaded()
-		self.LogoFallback.Visible = self.Logo.Image == "" or not self.Logo.IsLoaded
-		self.LauncherFallback.Visible = self.Launcher.Image == "" or not self.Launcher.IsLoaded
-	end
-	self:Connect(self.Logo:GetPropertyChangedSignal("IsLoaded"), logoLoaded)
-	self:Connect(self.Launcher:GetPropertyChangedSignal("IsLoaded"), logoLoaded)
-	logoLoaded()
 	self:Connect(self.Gui.Destroying, function() self:Destroy(true) end)
 end
 

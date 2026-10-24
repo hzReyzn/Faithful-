@@ -11,6 +11,7 @@ check(Mock.Count(ui.Pages)==5 and ui.Pages.Home.Visible,'only five pages, Home a
 check(ui.Pages.Main:FindFirstAncestorWhichIsA('ScreenGui')==ui.Gui,'native ScreenGui hierarchy')
 check(#ui.Pages.Main:GetChildren()==1,'default page has layout only; no gameplay controls')
 check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparency reveals supplied artwork')
+check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over original logo or reopen button')
 check(ui.Theme.Layout.Width==940 and ui.Theme.Layout.Height==528,'window follows compact 16:9 dimensions')
 check(type(ui.Assets.LoadFromRepository)=='function','optional local artwork loader remains separate from UI')
 check(ui.Assets.Resolve('BACKGROUND_ASSET_ID')=='' and ui.Assets.Resolve('123')=='rbxassetid://123','asset placeholders and numeric IDs')
@@ -34,8 +35,10 @@ local secondUri,secondStatus=ui.Assets.LoadFromRepository('Background')
 check(firstStatus=='Assigned' and secondStatus=='Assigned' and firstUri==secondUri,'executor asset registration works')
 check(downloadCount==1,'validated PNG cache avoids duplicate downloads')
 getcustomasset=nil;writefile=nil;isfile=nil;readfile=nil;game.HttpGet=oldHttpGet
-ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=true
-check(not ui.Brand.Visible,'loaded background title is not duplicated')
+ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=false; ui:_Layout()
+check(not ui.Brand.Visible,'assigned background title is not duplicated before IsLoaded reports success')
+ui.Background.IsLoaded=true
+check(not ui.Brand.Visible,'loaded background title stays singular')
 ui.Background.Image=''; ui.Background.IsLoaded=false
 check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==12 and #ui.VFX.Embers==14,'Ultra uses bounded pools and one loop')
 check(not ui.VFX.Mist[1].Node.Visible,'unconfigured smoke has no fake asset')
