@@ -3,13 +3,14 @@
 | Archivo | Procedencia | Uso |
 | --- | --- | --- |
 | FaithfulBackground.png | Primera imagen adjunta; copia de bytes intacta | Fondo de la ventana |
-| FaithfulLogo.png | Segunda imagen adjunta; copia de bytes intacta | Logo independiente y botón de reapertura |
+| FaithfulLogo.png | Segunda imagen adjunta; copia de bytes intacta | Solo botón de reapertura/minimizado |
+| FaithfulWordmark.png | Nuevo texto FAITHFUL adjunto por el usuario; copia de 1024 × 341 optimizada para UI, con transparencia | Cabecera, reemplaza el logo cuadrado |
 | LayoutReference.png | Tercera imagen adjunta; copia de bytes intacta | Referencia de composición, no se carga en Roblox |
 | CrimsonMist.png | Sprite nuevo generado con Imagegen integrado, fondo transparente | Textura compartida de las doce capas de niebla Ultra |
 
-Los PNG no contienen IDs de Roblox. Para Roblox Studio, impórtalos a la experiencia y configura los tres IDs en `FaithfulAssets.luau`.
+Los PNG no contienen IDs de Roblox. Para Roblox Studio, impórtalos a la experiencia y configura los cuatro IDs en `FaithfulAssets.luau`.
 
-En un ejecutor que admita `getcustomasset` (o `getsynasset`) y `writefile`, el script autocontenido intenta cargar automáticamente **solo estos tres PNG**, desde una revisión fija de GitHub. Comprueba su firma PNG y tamaño antes de escribirlos en caché. Si el ejecutor no ofrece esas APIs, seguirá necesitando los IDs de Roblox. No se descarga ni ejecuta código Lua adicional.
+En un ejecutor que admita `getcustomasset` (o `getsynasset`) y `writefile`, el script autocontenido intenta cargar automáticamente **solo estos cuatro PNG**, desde revisiones fijas de GitHub. Comprueba su firma PNG y tamaño antes de escribirlos en caché. Si el ejecutor no ofrece esas APIs, seguirá necesitando los IDs de Roblox. No se descarga ni ejecuta código Lua adicional.
 
 ## Prompt utilizado para el sprite
 

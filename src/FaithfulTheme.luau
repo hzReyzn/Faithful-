@@ -18,7 +18,7 @@ local Theme = {
 	Layout = {
 		Width = 940, Height = 528, Margin = 16, Header = 58,
 		Sidebar = 160, CompactSidebar = 98, CompactAt = 600,
-		Radius = 7, LogoSize = 44, DisplayOrder = 40,
+		Radius = 7, WordmarkWidth = 174, WordmarkHeight = 48, DisplayOrder = 40,
 	},
 	-- The original 0.78 made artwork nearly invisible; show the supplied image
 	-- at 62% opacity while keeping the controls on dark readable surfaces.

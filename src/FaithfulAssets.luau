@@ -5,15 +5,18 @@
 local Assets = {
 	Background = "BACKGROUND_ASSET_ID", -- assets/FaithfulBackground.png (image 1)
 	Logo = "LOGO_ASSET_ID",             -- assets/FaithfulLogo.png (image 2)
+	Wordmark = "WORDMARK_ASSET_ID",     -- assets/FaithfulWordmark.png (header text)
 	Smoke = "SMOKE_ASSET_ID",           -- assets/CrimsonMist.png (transparent sprite)
 	BackgroundContainsTitle = true,
 }
 
 -- Pin the existing, reviewed artwork bytes rather than fetching mutable files.
 local BASE = "https://raw.githubusercontent.com/hzReyzn/Faithful-/dff138c05914f15c3c84bca1caef13a11969814b/assets/"
+local WORDMARK_BASE = "https://raw.githubusercontent.com/hzReyzn/Faithful-/d7b3d966f7449bd3b76d6d6586d85776b6c0f988/assets/"
 local remote = {
 	Background = { Url = BASE .. "FaithfulBackground.png", File = "Faithful-background-dff138.png", Bytes = 2343282 },
 	Logo = { Url = BASE .. "FaithfulLogo.png", File = "Faithful-logo-dff138.png", Bytes = 2561088 },
+	Wordmark = { Url = WORDMARK_BASE .. "FaithfulWordmark.png", File = "Faithful-wordmark-d7b3d9.png", Bytes = 387488 },
 	Smoke = { Url = BASE .. "CrimsonMist.png", File = "Faithful-mist-dff138.png", Bytes = 933469 },
 }
 

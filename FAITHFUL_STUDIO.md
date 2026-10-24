@@ -4,14 +4,14 @@ Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propi
 
 ## Resultado y decisiones visuales
 
-- La tercera imagen guía la distribución: cabecera, navegación izquierda, contenido derecho, bordes finos, arcos y detalles góticos discretos. Se reconstruye con objetos nativos. No se coloca la captura como fondo porque contiene textos y opciones que se pidieron eliminar.
-- La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda es el logo original con transparencia.
+- La tercera imagen guía la distribución: cabecera, navegación izquierda, contenido derecho y bordes finos. Se eliminó el adorno de arco y sigilo de la esquina inferior izquierda por petición del autor.
+- La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda se conserva como logo del botón para reabrir la ventana. El nuevo texto gótico `FAITHFUL` ocupa el espacio del logo en la cabecera.
 - Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Las páginas contienen su título y espacio limpio; no hay Movement, Player, Protection, Utilities ni funciones de juego.
-- El título de cabecera se oculta desde que se asigna el fondo que ya contiene FAITHFUL, incluso si un ejecutor no informa `IsLoaded`. No se superpone el sigilo nativo al logo original ni al botón de reapertura.
+- No hay un texto FAITHFUL nativo superpuesto: el encabezado usa exclusivamente `assets/FaithfulWordmark.png` (174 × 48 como tamaño de GUI, 108 × 36 en pantallas estrechas).
 - La ventana predeterminada pasa a **940 × 528** (aproximadamente 16:9), manteniendo adaptación a pantallas pequeñas.
 - El fondo usa **0.38** de `ImageTransparency` (62% opacidad) para que la ilustración resulte visible, sin modificar los píxeles del PNG.
 - Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar y continúa al reabrir. Una sesión nueva comienza en cero.
-- Se arrastra la ventana desde la cabecera con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo un tramo de cabecera recuperable. El logo puede arrastrarse por separado a cualquier punto visible; tras moverlo deja de seguir a la ventana. El pequeño botón de reapertura también es arrastrable.
+- Se arrastra la ventana desde la cabecera con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo un tramo de cabecera recuperable. El texto de cabecera puede arrastrarse por separado; tras moverlo deja de seguir a la ventana. El pequeño botón de reapertura mantiene el logo cuadrado original y también es arrastrable.
 - Cerrar solicita confirmación y oculta la interfaz. El logo de reapertura permite volver. Destruir el `ScreenGui` retira por completo sus recursos.
 
 ## Archivos
@@ -19,14 +19,14 @@ Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propi
 | Archivo | Responsabilidad |
 | --- | --- |
 | `src/FaithfulTheme.luau` | Paleta, medidas, transparencias, tiempos y calidad predeterminada |
-| `src/FaithfulAssets.luau` | Tres IDs configurables y cargador PNG local opcional para ejecutores compatibles |
+| `src/FaithfulAssets.luau` | Cuatro IDs configurables y cargador PNG local opcional para ejecutores compatibles |
 | `src/FaithfulUI.luau` | Construcción nativa, componentes, entrada, reloj y estado local |
 | `src/FaithfulVFX.luau` | Niebla, partículas, borde, pulsos, transiciones y limpieza de animaciones |
 | `src/FaithfulMain.client.luau` | Inicialización, instancia única y precarga no bloqueante |
 | `Faithful Exploit` | Versión autocontenida generada de las mismas fuentes; destino solicitado en GitHub |
 | `Faithful-Standalone.client.luau` | Copia descargable de esa versión, dentro del paquete de entrega |
 | `Faithful.rbxmx` | Carpeta nativa importable con los cuatro ModuleScripts y el LocalScript |
-| `assets/` | Fondo, logo, referencia de distribución y sprite transparente de niebla |
+| `assets/` | Fondo, logo del botón minimizado, texto de cabecera, referencia y sprite transparente de niebla |
 | `tests/StudioSmoke.client.luau` | Prueba opcional para ejecutar dentro de Studio |
 | `tools/build.py` | Regenera el archivo autocontenido sin ejecutar código dinámico |
 
@@ -37,14 +37,15 @@ Las versiones modular y autocontenida usan la misma implementación. Se instala 
 No se han publicado imágenes en tu cuenta de Roblox ni se han inventado IDs. **En Roblox Studio**, antes de evaluar el acabado visual:
 
 1. Abre tu experiencia en Roblox Studio y su Asset Manager.
-2. Importa `assets/FaithfulBackground.png`, `assets/FaithfulLogo.png` y `assets/CrimsonMist.png` como imágenes bajo el propietario o grupo de la experiencia. Conserva el canal alfa del logo y de la niebla.
+2. Importa `assets/FaithfulBackground.png`, `assets/FaithfulLogo.png`, `assets/FaithfulWordmark.png` y `assets/CrimsonMist.png` como imágenes bajo el propietario o grupo de la experiencia. Conserva el canal alfa del logo, el texto y la niebla.
 3. Obtén los IDs de imagen correspondientes y verifica sus permisos para la experiencia.
-4. En `FaithfulAssets`, sustituye los tres marcadores:
+4. En `FaithfulAssets`, sustituye los cuatro marcadores:
 
 ```luau
 local Assets = {
     Background = "BACKGROUND_ASSET_ID",
     Logo = "LOGO_ASSET_ID",
+    Wordmark = "WORDMARK_ASSET_ID",
     Smoke = "SMOKE_ASSET_ID",
     BackgroundContainsTitle = true,
 }
@@ -52,11 +53,11 @@ local Assets = {
 
 Acepta el ID numérico escrito como cadena o `rbxassetid://` seguido de ese ID real. No admite enlaces a GitHub ni URLs de páginas de decals. No reemplaces el módulo entero por el bloque anterior: conserva su función `Resolve` y `return Assets`.
 
-`LayoutReference.png` no se carga en el juego: sus opciones están incrustadas en la imagen. El sprite `CrimsonMist.png` es el único arte nuevo; se tiñe y anima en `FaithfulVFX`, detrás de los controles. No añade personajes ni símbolos al diseño.
+`LayoutReference.png` no se carga en el juego: sus opciones están incrustadas en la imagen. El sprite `CrimsonMist.png` se tiñe y anima en `FaithfulVFX`, detrás de los controles. El PNG `FaithfulWordmark.png` procede del nuevo texto aprobado por el autor y se redujo a 1024 × 341 para su uso en la cabecera.
 
-**Alternativa para el `loadstring` en un ejecutor compatible:** si los IDs siguen sin configurar, `FaithfulAssets.LoadFromRepository()` descarga los PNG del commit fijo `dff138c...` de este repositorio, comprueba firma/tamaño y los registra mediante `getcustomasset` o `getsynasset` y `writefile`. Se reutiliza una caché local validada cuando existen `isfile` y `readfile`. Esto replica el principio del cargador visual de Reyzn X, sin descargar ni ejecutar scripts Lua externos. En ejecutores sin esas APIs, las imágenes necesitan IDs reales como en Studio.
+**Alternativa para el `loadstring` en un ejecutor compatible:** si los IDs siguen sin configurar, `FaithfulAssets.LoadFromRepository()` descarga los PNG desde revisiones fijas de este repositorio (`dff138c...` para los tres recursos originales y `d7b3d9...` para el texto nuevo), comprueba firma/tamaño y los registra mediante `getcustomasset` o `getsynasset` y `writefile`. Se reutiliza una caché local validada cuando existen `isfile` y `readfile`. No se ejecutan scripts Lua externos. En ejecutores sin esas APIs, las imágenes necesitan IDs reales como en Studio.
 
-Sin imágenes disponibles la interfaz sigue funcionando, con fondo oscuro y un sigilo nativo de respaldo. El estado de los recursos se expone en `AssetBackground`, `AssetLogo` y `AssetSmoke` del `ScreenGui` (`Ready`, `Assigned`, `NeedsRobloxId` o un error de carga).
+Sin imágenes disponibles la interfaz sigue funcionando, con fondo oscuro pero sin los recursos personalizados. El estado de los recursos se expone en `AssetBackground`, `AssetLogo`, `AssetWordmark` y `AssetSmoke` del `ScreenGui` (`Ready`, `Assigned`, `NeedsRobloxId` o un error de carga).
 
 ## 2. Instalación rápida: un LocalScript
 

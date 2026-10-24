@@ -259,14 +259,13 @@ function UI:_Layout()
 	local compact = w < layout.CompactAt
 	local sidebar = compact and layout.CompactSidebar or layout.Sidebar
 	self.Window.Size = UDim2.fromOffset(w, h)
+	-- Keep the wide wordmark clear of the timer on narrow touch screens.
+	self.Logo.Size = UDim2.fromOffset(w < 520 and 108 or layout.WordmarkWidth,
+		w < 520 and 36 or layout.WordmarkHeight)
 	self.Sidebar.Size = UDim2.new(0, sidebar, 1, -layout.Header)
 	self.Content.Position = UDim2.fromOffset(sidebar + 20, layout.Header + 14)
 	self.Content.Size = UDim2.new(1, -sidebar - 38, 1, -layout.Header - 30)
 	self.PageTitle.TextSize = compact and 28 or 34
-	-- Custom-asset URIs may render correctly without reporting IsLoaded. When the
-	-- supplied background already includes its own wordmark, never stack a
-	-- second FAITHFUL title on top of it after assigning the image.
-	self.Brand.Visible = w >= 520 and not (self.Background.Image ~= "" and self.Assets.BackgroundContainsTitle)
 	for _, record in pairs(self.Navigation) do
 		record.Label.Position = UDim2.fromOffset(compact and 36 or 52, 0)
 		record.Label.Size = UDim2.new(1, compact and -38 or -58, 1, 0)
@@ -572,8 +571,6 @@ function UI:_Build()
 	self.Header = self:Make("Frame", self.Window, { Name = "Header", Size = UDim2.new(1, 0, 0, layout.Header), ZIndex = 10,
 		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.38 })
 	self.DragHandle = self:Make("TextButton", self.Header, { Name = "DragHandle", Size = UDim2.new(1, -188, 1, 0), AutoButtonColor = false, Selectable = false })
-	self.Brand = self:Label(self.Header, "FAITHFUL", UDim2.fromOffset(76, 0), UDim2.new(1, -300, 1, 0), 29)
-	self.Brand.Font = self.Theme.Fonts.Display
 	self.Timer = self:Label(self.Header, "00:00:00", UDim2.new(1, -194, 0, 0), UDim2.fromOffset(92, layout.Header), 13, colors.Silver)
 	self.Timer.TextXAlignment = Enum.TextXAlignment.Center
 	local function headerButton(name, offset)
@@ -591,12 +588,6 @@ function UI:_Build()
 		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.27, ZIndex = 10 })
 	self:Make("Frame", self.Sidebar, { Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, -7),
 		BackgroundColor3 = colors.Metal, BackgroundTransparency = 0.5 })
-	local arch = self:Make("Frame", self.Sidebar, { Position = UDim2.new(0.5, -40, 1, -108), Size = UDim2.fromOffset(80, 100), ZIndex = 11 })
-	for _, insetX in ipairs({ 0, 6 }) do
-		local path = { Vector2.new(insetX, 96), Vector2.new(insetX, 52), Vector2.new(10 + insetX, 28), Vector2.new(40, 3), Vector2.new(70 - insetX, 28), Vector2.new(80 - insetX, 52), Vector2.new(80 - insetX, 96) }
-		for i = 1, #path - 1 do self:Line(arch, path[i], path[i + 1], colors.Metal, 0.65) end
-	end
-	self:Icon(arch, "Sigil", UDim2.fromOffset(30, 42), 20, colors.Crimson)
 	local navigation = self:Make("ScrollingFrame", self.Sidebar, { Name = "Navigation", Position = UDim2.fromOffset(7, 12), Size = UDim2.new(1, -14, 1, -24),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.fromOffset(0, 0), ScrollBarThickness = 2,
 		ScrollBarImageColor3 = colors.Crimson, ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 12 })
@@ -629,8 +620,8 @@ function UI:_Build()
 		self:Make("UIListLayout", page, { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder })
 		self.Pages[name] = page
 	end
-	self.Logo = self:Make("ImageButton", self.Root, { Name = "DraggableLogo", Size = UDim2.fromOffset(layout.LogoSize, layout.LogoSize),
-		Image = self.Assets.Resolve(self.Assets.Logo), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 60 }, "logo")
+	self.Logo = self:Make("ImageButton", self.Root, { Name = "DraggableWordmark", Size = UDim2.fromOffset(layout.WordmarkWidth, layout.WordmarkHeight),
+		Image = self.Assets.Resolve(self.Assets.Wordmark), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 60 }, "logo")
 	self.Launcher = self:Make("ImageButton", self.Root, { Name = "Reopen", Size = UDim2.fromOffset(52, 52),
 		Image = self.Assets.Resolve(self.Assets.Logo), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 61,
 		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.1 })

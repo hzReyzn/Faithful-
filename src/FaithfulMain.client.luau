@@ -27,7 +27,7 @@ ui:SetOpen(true)
 -- executors can fetch only the pinned PNG artwork from this project's GitHub.
 -- The UI is created first; downloading cannot block the controls or session clock.
 local requested = {}
-for _, name in ipairs({ "Background", "Logo", "Smoke" }) do
+for _, name in ipairs({ "Background", "Logo", "Wordmark", "Smoke" }) do
 	local asset = Assets.Resolve(Assets[name])
 	ui.Gui:SetAttribute("Asset" .. name, "Loading")
 	if asset ~= "" then
@@ -47,8 +47,10 @@ for _, name in ipairs({ "Background", "Logo", "Smoke" }) do
 				ui.Background.Image = uri
 				target = ui.Background
 			elseif name == "Logo" then
-				ui.Logo.Image = uri
 				ui.Launcher.Image = uri
+				target = ui.Launcher
+			elseif name == "Wordmark" then
+				ui.Logo.Image = uri
 				target = ui.Logo
 			else
 				vfx:SetSmokeImage(uri)
@@ -68,7 +70,7 @@ if #requested > 0 then
 		local ok, reason = pcall(function()
 			ContentProvider:PreloadAsync(requested, function(asset, status)
 				if ui.Destroyed then return end
-				for _, name in ipairs({ "Background", "Logo", "Smoke" }) do
+				for _, name in ipairs({ "Background", "Logo", "Wordmark", "Smoke" }) do
 					if Assets.Resolve(Assets[name]) == asset then ui.Gui:SetAttribute("Asset" .. name, status.Name) end
 				end
 			end)

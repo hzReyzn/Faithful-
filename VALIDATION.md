@@ -1,5 +1,13 @@
 # Verificación de Faithful — 24 de octubre de 2026
 
+## Actualización: texto FAITHFUL en cabecera y limpieza del lateral
+
+- El nuevo `FaithfulWordmark.png` se obtuvo del PNG proporcionado por el usuario y se optimizó a **1024 × 341**, conservando el canal alfa. Se publica como recurso separado del logo cuadrado anterior.
+- El encabezado usa exclusivamente el nuevo texto gráfico (**174 × 48** en escritorio y **108 × 36** en pantallas estrechas). El icono cuadrado original sigue reservado para reabrir la ventana minimizada.
+- Se eliminó por completo el arco decorativo y su sigilo de la parte inferior izquierda; la navegación permanece igual.
+- `FaithfulAssets` admite cuatro recursos: fondo, logo de reapertura, texto y niebla. Cada PNG procede de un commit inmutable de GitHub y se valida antes de registrar como asset local.
+- `npm test` pasó **70 aserciones**, incluidas separación de logo/texto, dimensiones responsivas y ausencia del adorno lateral. Todos los módulos y el bundle compilaron; este resultado no sustituye una prueba visual en Roblox.
+
 ## Actualización: ventana compacta y arte automático
 
 - Revisión posterior: se retiraron los sigilos nativos sobre el logo y el botón de reapertura, y se impidió que el texto FAITHFUL de cabecera duplique el título integrado en el PNG aunque `IsLoaded` siga en `false`.

@@ -11,7 +11,10 @@ check(Mock.Count(ui.Pages)==5 and ui.Pages.Home.Visible,'only five pages, Home a
 check(ui.Pages.Main:FindFirstAncestorWhichIsA('ScreenGui')==ui.Gui,'native ScreenGui hierarchy')
 check(#ui.Pages.Main:GetChildren()==1,'default page has layout only; no gameplay controls')
 check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparency reveals supplied artwork')
-check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over original logo or reopen button')
+check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over the wordmark or reopen button')
+check(ui.Logo.Name=='DraggableWordmark' and ui.Launcher.Name=='Reopen','wordmark header and minimized launcher are separate')
+check(ui.Logo.Size.X.Offset==174 and ui.Logo.Size.Y.Offset==48,'new wordmark fits the standard header')
+check(#ui.Sidebar:GetChildren()==2,'bottom-left sidebar arch and sigil are removed')
 check(ui.Theme.Layout.Width==940 and ui.Theme.Layout.Height==528,'window follows compact 16:9 dimensions')
 check(type(ui.Assets.LoadFromRepository)=='function','optional local artwork loader remains separate from UI')
 check(ui.Assets.Resolve('BACKGROUND_ASSET_ID')=='' and ui.Assets.Resolve('123')=='rbxassetid://123','asset placeholders and numeric IDs')
@@ -36,9 +39,8 @@ check(firstStatus=='Assigned' and secondStatus=='Assigned' and firstUri==secondU
 check(downloadCount==1,'validated PNG cache avoids duplicate downloads')
 getcustomasset=nil;writefile=nil;isfile=nil;readfile=nil;game.HttpGet=oldHttpGet
 ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=false; ui:_Layout()
-check(not ui.Brand.Visible,'assigned background title is not duplicated before IsLoaded reports success')
+check(ui.Brand==nil,'native FAITHFUL header text is replaced by the image wordmark')
 ui.Background.IsLoaded=true
-check(not ui.Brand.Visible,'loaded background title stays singular')
 ui.Background.Image=''; ui.Background.IsLoaded=false
 check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==12 and #ui.VFX.Embers==14,'Ultra uses bounded pools and one loop')
 check(not ui.VFX.Mist[1].Node.Visible,'unconfigured smoke has no fake asset')
@@ -107,6 +109,8 @@ for _,size in ipairs({{360,640},{844,390},{1280,800},{1920,1080}}) do
  Mock.Resize(ui,size[1],size[2])
  check(ui.Window.AbsoluteSize.X<=size[1]-24 and ui.Window.AbsoluteSize.Y<=size[2]-24 and ui.Content.AbsoluteSize.X>160,'responsive bounds '..size[1]..'x'..size[2])
 end
+Mock.Resize(ui,360,640)
+check(ui.Logo.Size.X.Offset==108 and ui.Logo.Size.Y.Offset==36,'wordmark shrinks for compact mobile header')
 Mock.Resize(ui,1280,800)
 local touch=Mock.Pointer('Touch',200,100)
 local old=ui.Window.Position
@@ -173,7 +177,7 @@ ui:Destroy(); Mock.Step(.2)
 check(#Mock.Jobs==0 and Mock.Connections==0,'destroy cancels yielding preload')
 
 -- End-to-end optional artwork assignment when an executor has custom asset APIs.
-local remoteSizes={FaithfulBackground=2343282,FaithfulLogo=2561088,CrimsonMist=933469}
+local remoteSizes={FaithfulBackground=2343282,FaithfulLogo=2561088,FaithfulWordmark=387488,CrimsonMist=933469}
 local remoteFiles={}
 getcustomasset=function(path) return 'customasset://'..path end
 writefile=function(path,bytes) remoteFiles[path]=bytes end
@@ -187,7 +191,9 @@ game.HttpGet=function(_,url)
 end
 ui=start(); Mock.Step(.3)
 check(ui.Background.Image:find('customasset://',1,true)==1,'background image assigned asynchronously')
-check(ui.Logo.Image:find('customasset://',1,true)==1 and ui.Launcher.Image==ui.Logo.Image,'logo and launcher share the supplied artwork')
+check(ui.Logo.Image:find('Faithful%-wordmark%-d7b3d9')~=nil,'new wordmark image is assigned to the open header')
+check(ui.Launcher.Image:find('Faithful%-logo%-dff138')~=nil,'minimized launcher retains the original logo')
+check(ui.Logo.Image~=ui.Launcher.Image,'wordmark and minimized launcher use separate art')
 check(ui.VFX.SmokeUri:find('customasset://',1,true)==1 and ui.VFX.Mist[1].Node.Image==ui.VFX.SmokeUri,'smoke sprite reaches pooled VFX nodes')
 ui:Destroy(); Mock.Step(.2)
 getcustomasset=nil;writefile=nil;isfile=nil;readfile=nil;game.HttpGet=nil
