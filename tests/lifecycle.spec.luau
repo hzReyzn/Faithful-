@@ -12,7 +12,7 @@ check(ui.Pages.Main:FindFirstAncestorWhichIsA('ScreenGui')==ui.Gui,'native Scree
 check(#ui.Pages.Main:GetChildren()==1,'default page has layout only; no gameplay controls')
 check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparency reveals supplied artwork')
 check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over the wordmark or reopen button')
-check(ui.Logo.Name=='DraggableWordmark' and ui.Launcher.Name=='Reopen','wordmark header and minimized launcher are separate')
+check(ui.Logo.Name=='HeaderWordmark' and ui.Launcher.Name=='Reopen','wordmark header and minimized launcher are separate')
 check(ui.Logo.Size.X.Offset==170 and ui.Logo.Size.Y.Offset==44,'new wordmark fits the standard header')
 check(#ui.Sidebar:GetChildren()==2,'bottom-left sidebar arch and sigil are removed')
 check(ui.Theme.Layout.Width==860 and ui.Theme.Layout.Height==480,'window is smaller than the previous 940x528 layout')
@@ -42,15 +42,15 @@ ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=false; ui:_Layout
 check(ui.Brand==nil,'native FAITHFUL header text is replaced by the image wordmark')
 ui.Background.IsLoaded=true
 ui.Background.Image=''; ui.Background.IsLoaded=false
-check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==18 and #ui.VFX.Embers==18,'Ultra uses bounded pools and one loop')
+check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==32 and #ui.VFX.Embers==18,'Ultra uses bounded pools and one loop')
 check(not ui.VFX.Mist[1].Node.Visible,'unconfigured smoke has no fake asset')
 local instanceCount=#ui.Gui:GetDescendants()
 ui.VFX:SetSmokeImage('rbxassetid://123')
 check(ui.VFX.Mist[1].Node.Visible and not ui.VFX.SmokeReady,'assigned smoke is visible before IsLoaded: no visibility/load deadlock')
 ui.VFX.Mist[1].Node.IsLoaded=true
 Mock.Step(1)
-check(ui.VFX.Mist[1].Node.Visible and ui.VFX.Mist[1].Node.ImageTransparency>.5,'exterior mist opacity remains bounded')
-check(ui.VFX.Mist[13].Interior and ui.VFX.Mist[13].Node.ImageTransparency>.8,'interior mist stays behind controls and faint')
+check(ui.VFX.Mist[1].Node.Visible and ui.VFX.Mist[1].Node.ImageTransparency>=.26,'exterior mist opacity remains bounded')
+check(ui.VFX.Mist[25].Interior and ui.VFX.Mist[25].Node.ImageTransparency>=.77,'interior mist stays behind controls and faint')
 local maxVisible=0
 for i=1,50 do
  Mock.Step(.1)
@@ -60,43 +60,50 @@ for i=1,50 do
 end
 check(maxVisible<=2,'border never lights more than two adjoining segments')
 check(not ui.Window.ClipsDescendants and ui.Surface.ClipsDescendants,'outer atmosphere can escape the clipped artwork surface')
-check(ui.VFX.Mist[1].Node.Parent==ui.MistLayer and ui.VFX.Mist[13].Node.Parent==ui.InnerMistLayer
+check(ui.VFX.Mist[1].Node.Parent==ui.MistLayer and ui.VFX.Mist[25].Node.Parent==ui.InnerMistLayer
  and ui.InnerMistLayer.ZIndex<ui.Content.ZIndex,'exterior and interior mist remain below interactive content')
-check(ui.Appearance.Quality and ui.Appearance.Size and #ui.Pages.Scripts:GetChildren()==1,'appearance controls exist without adding gameplay or script execution')
-ui:SelectCategory('Visuals'); Mock.Step(.4)
-local qualityStyle=ui.ButtonLookup[ui.Appearance.Quality.Button]
-check(qualityStyle.Caption.Text=='Ultra  +' and qualityStyle.Caption.ZIndex>qualityStyle.Sheen.ZIndex,'dropdown value is drawn above its metal skin')
-ui.Appearance.Quality.Button.Activated:Fire(); ui.Appearance.Quality.Items[2].Activated:Fire(); Mock.Step(.2)
-check(ui.VFX.Quality=='Balanced' and ui.QualityBadge.Text=='BALANCED' and qualityStyle.Caption.Text=='Balanced  +','quality control updates effects and both captions')
-ui.Appearance.Quality:Set('Ultra')
+local cleanPages=true
+for _,page in pairs(ui.Pages) do if #page:GetChildren()~=1 then cleanPages=false end end
+check(cleanPages and ui.Appearance==nil and ui.QualityBadge==nil,'all five pages are clean; appearance controls and quality badge are absent')
+local backgroundMask=false
+for _,child in ipairs(ui.Background:GetChildren()) do if child:IsA('UIGradient') then backgroundMask=true end end
+check(not backgroundMask,'background artwork has no gradient hiding its title')
+check(ui.Logo.Parent==ui.Header,'wordmark belongs to the window header')
 local function visibleCount(pool)
  local count=0
  for _,particle in ipairs(pool) do if particle.Node.Visible then count+=1 end end
  return count
 end
-ui.Appearance.Mist.Button.Activated:Fire(); Mock.Step(.1)
-check(not ui.VFX.Enabled.Mist and visibleCount(ui.VFX.Mist)==0 and visibleCount(ui.VFX.Embers)==18,'mist toggle is independent of embers')
-ui.Appearance.Mist.Button.Activated:Fire()
-ui.Appearance.Embers.Button.Activated:Fire(); Mock.Step(.1)
-check(not ui.VFX.Enabled.Embers and visibleCount(ui.VFX.Embers)==0 and visibleCount(ui.VFX.Mist)==18,'embers toggle is independent of mist')
-ui.Appearance.Border.Button.Activated:Fire(); Mock.Step(.1)
-local litEdges=0
-for _,edge in ipairs(ui.VFX.Edges) do if edge.Host.Visible then litEdges+=1 end end
-check(litEdges==0 and not ui.VFX.Enabled.Border,'border toggle extinguishes every moving segment')
-ui.Appearance.Embers.Button.Activated:Fire(); ui.Appearance.Border.Button.Activated:Fire()
-ui.Appearance.Intensity:Set(100); Mock.Step(.3)
+check(ui.VFX:SetQuality('Balanced')=='Ultra' and ui.Gui:GetAttribute('VFXQuality')=='Ultra','legacy Balanced request cannot change fixed Ultra')
+check(ui.VFX:SetQuality('Minimal')=='Ultra' and ui.VFX.Heartbeat~=nil,'legacy Minimal request cannot downgrade effects')
+check(visibleCount(ui.VFX.Mist)==32 and visibleCount(ui.VFX.Embers)==18,'fixed Ultra keeps the full active pool')
+local minDense=100
+local movingNode=ui.VFX.Mist[9].Node
+local oldMistPosition=movingNode.Position
+for i=1,100 do
+ Mock.Step(.2)
+ local dense=0
+ for _,particle in ipairs(ui.VFX.Mist) do
+  if not particle.Interior and particle.Node.Visible and particle.Node.ImageTransparency<.75 then dense+=1 end
+ end
+ minDense=math.min(minDense,dense)
+end
+check(minDense>=8,'overlapping smoke cycles maintain a populated exterior across twenty seconds')
+check(movingNode.Size.X.Offset>150 and movingNode.Size.Y.Offset>170
+ and movingNode.Position.Y.Offset~=oldMistPosition.Y.Offset,'side smoke uses larger drifting volumes')
+ui.VFX:SetMistIntensity(1); Mock.Step(.3)
 local alphaWithinLimits=true
 for _,particle in ipairs(ui.VFX.Mist) do
- if particle.Node.ImageTransparency < (particle.Interior and .8 or .32)-1e-6 then alphaWithinLimits=false end
+ if particle.Node.ImageTransparency<(particle.Interior and .75 or .18)-1e-6 then alphaWithinLimits=false end
 end
-check(ui.VFX.Intensity==1 and alphaWithinLimits,'full mist intensity still caps opacity separately inside and outside')
-ui.Appearance.Intensity:Set(0); Mock.Step(.1)
-check(visibleCount(ui.VFX.Mist)==0,'zero mist intensity hides its pool')
-ui.Appearance.Intensity:Set(72)
-ui.Appearance.Background:Set(75)
-check(math.abs(ui.Background.ImageTransparency-.25)<1e-6,'background slider changes only image opacity')
-ui.Appearance.Background:Set(62)
-check(#ui.Gui:GetDescendants()==instanceCount,'appearance changes reuse existing objects')
+check(alphaWithinLimits,'mist has separate bounded opacity inside and outside')
+ui.VFX:SetMistIntensity(0); Mock.Step(.1)
+check(visibleCount(ui.VFX.Mist)==0,'developer intensity setter can silence its pool')
+ui.VFX:SetMistIntensity(ui.Theme.MistIntensity)
+ui.VFX:SetEffect('Mist',false); Mock.Step(.1)
+check(visibleCount(ui.VFX.Mist)==0 and visibleCount(ui.VFX.Embers)==18,'developer effect switches remain independent')
+ui.VFX:SetEffect('Mist',true)
+check(#ui.Gui:GetDescendants()==instanceCount,'mist updates and locked quality requests reuse existing objects')
 
 -- Press/hover effects share one reflection, reset on focus loss and honor reduced motion.
 local homeButton=ui.Navigation.Home.Button
@@ -116,17 +123,12 @@ homeButton.InputBegan:Fire(press); Mock.Step(.2)
 check(homeStyle.Scale.Scale==1 and ui.VFX.Reflection==nil,'reduced motion suppresses press scaling and reflections')
 Input.InputEnded:Fire(press); ui.VFX:SetReducedMotion(false)
 
--- Resizing via a captured touch slider must not cancel its own gesture.
-ui:SelectCategory('Settings'); Mock.Step(.4)
-local sizeButton=ui.Appearance.Size.Button
-local resizeTouch=Mock.Pointer('Touch',sizeButton.AbsolutePosition.X+sizeButton.AbsoluteSize.X*.4,sizeButton.AbsolutePosition.Y+20)
-sizeButton.InputBegan:Fire(resizeTouch)
-check(ui.Pointer~=nil and not ui.Pages.Settings.ScrollingEnabled and ui.Window.AbsoluteSize.X<860,'size slider retains touch capture while resizing')
-resizeTouch.Position=vec(sizeButton.AbsolutePosition.X+sizeButton.AbsoluteSize.X*.7,sizeButton.AbsolutePosition.Y+20)
-Input.InputChanged:Fire(resizeTouch); Input.InputEnded:Fire(resizeTouch)
-check(ui.Pointer==nil and ui.Pages.Settings.ScrollingEnabled,'slider release restores page scrolling')
+-- Native parenting keeps the header wordmark attached during layout changes.
+ui:SetWindowSize(.85)
+check(ui.Logo.AbsolutePosition.X-ui.Window.AbsolutePosition.X==16
+ and ui.Logo.AbsolutePosition.Y-ui.Window.AbsolutePosition.Y==6,'wordmark stays anchored while resizing')
 ui:ResetLayout()
-check(ui.Window.AbsoluteSize.X==860 and ui.Appearance.Size.Value==100 and not ui.LogoDetached,'reset restores base dimensions and attached wordmark')
+check(ui.Window.AbsoluteSize.X==860 and ui.Logo.Parent==ui.Header,'reset keeps the wordmark in its header')
 local titleTouch=Mock.Pointer('Touch',ui.PageTitle.AbsolutePosition.X,ui.PageTitle.AbsolutePosition.Y+10)
 ui.TitleDragHandle.InputBegan:Fire(titleTouch)
 ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=true
@@ -171,12 +173,7 @@ Mock.Step(.2)
 ui.Launcher.Activated:Fire(); Mock.Step(.7)
 check(ui.Open,'launcher reopens')
 ui.VFX:SetQuality('Balanced'); Mock.Step(.3)
-local activeMist,activeEmbers=0,0
-for _,p in ipairs(ui.VFX.Mist) do if p.Node.Visible then activeMist+=1 end end
-for _,p in ipairs(ui.VFX.Embers) do if p.Node.Visible then activeEmbers+=1 end end
-check(activeMist==0 and activeEmbers==6,'Balanced budget')
-ui.VFX:SetQuality('Minimal'); Mock.Step(.2)
-check(ui.VFX.Heartbeat==nil,'Minimal has no ambient loop')
+check(ui.VFX.Quality=='Ultra' and visibleCount(ui.VFX.Mist)==32,'reopen preserves the locked Ultra profile')
 ui.VFX:SetQuality('Ultra'); ui.VFX:SetReducedMotion(true)
 check(ui.VFX.Heartbeat==nil and ui.VFX.Reduced,'reduced motion stops ambient animation')
 ui.VFX:SetReducedMotion(false)
@@ -204,17 +201,30 @@ ui.DragHandle.InputBegan:Fire(touch)
 touch.Position=vec(350,200); Input.InputChanged:Fire(touch)
 Input.InputEnded:Fire(touch)
 check(ui.Window.Position.X.Offset~=old.X.Offset and ui.Pointer==nil,'touch window drag and release')
-local mouse=Mock.Pointer('MouseButton1',300,100)
+ui:ResetLayout()
+local beforeWindow=ui.Window.AbsolutePosition
+local beforeLogo=ui.Logo.AbsolutePosition
+local mouse=Mock.Pointer('MouseButton1',beforeLogo.X+30,beforeLogo.Y+15)
 ui.Logo.InputBegan:Fire(mouse)
-Input.InputChanged:Fire(Mock.Pointer('MouseMovement',1200,700))
-Input.InputEnded:Fire(Mock.Pointer('MouseButton1',1200,700))
-local logoX=ui.Logo.Position.X.Offset
-check(ui.LogoDetached and logoX>300,'logo drag detaches independently')
+Input.InputChanged:Fire(Mock.Pointer('MouseMovement',mouse.Position.X+120,mouse.Position.Y+80))
+Input.InputEnded:Fire(mouse)
+check(ui.Window.AbsolutePosition.X==beforeWindow.X+120 and ui.Window.AbsolutePosition.Y==beforeWindow.Y+80
+ and ui.Logo.AbsolutePosition.X==beforeLogo.X+120 and ui.Logo.AbsolutePosition.Y==beforeLogo.Y+80,'dragging wordmark moves the entire window with the same mouse delta')
+local logoTouch=Mock.Pointer('Touch',ui.Logo.AbsolutePosition.X+20,ui.Logo.AbsolutePosition.Y+10)
+beforeWindow=ui.Window.AbsolutePosition
+ui.Logo.InputBegan:Fire(logoTouch)
+logoTouch.Position=logoTouch.Position+vec(40,-20); Input.InputChanged:Fire(logoTouch); Input.InputEnded:Fire(logoTouch)
+check(ui.Window.AbsolutePosition.X==beforeWindow.X+40 and ui.Pointer==nil
+ and ui.Logo.AbsolutePosition.X-ui.Window.AbsolutePosition.X==16,'touching the wordmark cannot detach it')
 local mouse2=Mock.Pointer('MouseButton1',200,100)
 ui.DragHandle.InputBegan:Fire(mouse2)
 Input.InputChanged:Fire(Mock.Pointer('MouseMovement',250,140))
 Input.WindowFocusReleased:Fire()
-check(ui.Pointer==nil and ui.Logo.Position.X.Offset==logoX,'focus loss releases drag and detached logo stays put')
+check(ui.Pointer==nil and ui.Logo.AbsolutePosition.X-ui.Window.AbsolutePosition.X==16,'focus loss releases drag while retaining the wordmark anchor')
+ui.Window.Position=UDim2.fromOffset(130,180)
+check(ui.Logo.AbsolutePosition.X==146 and ui.Logo.AbsolutePosition.Y==186,'programmatic window movement also carries the wordmark without a follow loop')
+ui:SetOpen(false); Mock.Step(.3); ui:SetOpen(true); Mock.Step(.5)
+check(ui.Logo.Parent==ui.Header and ui.Logo.AbsolutePosition.X==146,'minimize and reopen preserve the attached wordmark')
 ui:Notify('One'); Mock.Step(.05); ui:Notify('Two'); Mock.Step(3.5)
 check(not ui.Toast.Visible and #ui.Gui:GetDescendants()==instanceCount,'notifications reuse one object and cancel prior timeout')
 ui:Confirm('Test',function() error('Cancelled confirmation executed') end)
@@ -248,12 +258,14 @@ check(slider.Value==0,'slider lower bound')
 local dropdown=ui:Dropdown(ui.Pages.Main,'Test',{'A','B'},'A',function() fired+=1 end)
 dropdown.Button.Activated:Fire(); dropdown.Items[2].Activated:Fire()
 check(dropdown.Value=='B' and not dropdown.IsOpen,'dropdown selection closes list')
+local dropdownStyle=ui.ButtonLookup[dropdown.Button]
+check(dropdownStyle.Caption.Text=='B  +' and dropdownStyle.Caption.ZIndex>dropdownStyle.Sheen.ZIndex,'reusable dropdown caption remains above its metal skin')
 local text=ui:TextField(ui.Pages.Main,'Test','',function() fired+=1 end)
 text.Box.Text=string.rep('é',200)
 check(utf8.len(text.Box.Text)==128,'text cap preserves UTF-8 characters')
 local smokeCount=#ui.VFX.Mist
 ui.VFX:SetQuality('Minimal'); ui.VFX:SetQuality('Ultra')
-check(#ui.VFX.Mist==smokeCount,'quality switches reuse pool')
+check(#ui.VFX.Mist==smokeCount and ui.VFX.Quality=='Ultra','legacy quality calls retain Ultra and reuse its pool')
 ui.Gui:Destroy(); Mock.Step(.5)
 check(ui.Destroyed and Mock.Connections==0 and #Mock.Jobs==0,'external ScreenGui destruction cleans integration')
 ContentProvider.Slow=true

@@ -7,7 +7,6 @@ local Assets = {
 	Logo = "LOGO_ASSET_ID",             -- assets/FaithfulLogo.png (image 2)
 	Wordmark = "WORDMARK_ASSET_ID",     -- assets/FaithfulWordmark.png (header text)
 	Smoke = "SMOKE_ASSET_ID",           -- assets/CrimsonMist.png (transparent sprite)
-	BackgroundContainsTitle = true,
 }
 
 -- Pin the existing, reviewed artwork bytes rather than fetching mutable files.

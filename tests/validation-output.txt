@@ -36,23 +36,24 @@ PASS: interior mist stays behind controls and faint
 PASS: border never lights more than two adjoining segments
 PASS: outer atmosphere can escape the clipped artwork surface
 PASS: exterior and interior mist remain below interactive content
-PASS: appearance controls exist without adding gameplay or script execution
-PASS: dropdown value is drawn above its metal skin
-PASS: quality control updates effects and both captions
-PASS: mist toggle is independent of embers
-PASS: embers toggle is independent of mist
-PASS: border toggle extinguishes every moving segment
-PASS: full mist intensity still caps opacity separately inside and outside
-PASS: zero mist intensity hides its pool
-PASS: background slider changes only image opacity
-PASS: appearance changes reuse existing objects
+PASS: all five pages are clean; appearance controls and quality badge are absent
+PASS: background artwork has no gradient hiding its title
+PASS: wordmark belongs to the window header
+PASS: legacy Balanced request cannot change fixed Ultra
+PASS: legacy Minimal request cannot downgrade effects
+PASS: fixed Ultra keeps the full active pool
+PASS: overlapping smoke cycles maintain a populated exterior across twenty seconds
+PASS: side smoke uses larger drifting volumes
+PASS: mist has separate bounded opacity inside and outside
+PASS: developer intensity setter can silence its pool
+PASS: developer effect switches remain independent
+PASS: mist updates and locked quality requests reuse existing objects
 PASS: button press compresses its native metal face
 PASS: one shared reflection replaces the previous one
 PASS: focus loss restores pressed and hovered button states
 PASS: reduced motion suppresses press scaling and reflections
-PASS: size slider retains touch capture while resizing
-PASS: slider release restores page scrolling
-PASS: reset restores base dimensions and attached wordmark
+PASS: wordmark stays anchored while resizing
+PASS: reset keeps the wordmark in its header
 PASS: artwork finishing loading does not interrupt an active drag
 PASS: page title offers a second touch-friendly window drag area
 PASS: partially offscreen placement retains a recoverable title drag area
@@ -68,8 +69,7 @@ PASS: no hidden tweens or timer tasks
 PASS: launcher activation during drag cannot reopen
 PASS: launcher release after dragging cannot reopen
 PASS: launcher reopens
-PASS: Balanced budget
-PASS: Minimal has no ambient loop
+PASS: reopen preserves the locked Ultra profile
 PASS: reduced motion stops ambient animation
 PASS: system reduced motion is respected
 PASS: system setting change resumes ambient effects
@@ -82,8 +82,11 @@ PASS: responsive bounds 1280x800
 PASS: responsive bounds 1920x1080
 PASS: wordmark shrinks for compact mobile header
 PASS: touch window drag and release
-PASS: logo drag detaches independently
-PASS: focus loss releases drag and detached logo stays put
+PASS: dragging wordmark moves the entire window with the same mouse delta
+PASS: touching the wordmark cannot detach it
+PASS: focus loss releases drag while retaining the wordmark anchor
+PASS: programmatic window movement also carries the wordmark without a follow loop
+PASS: minimize and reopen preserve the attached wordmark
 PASS: notifications reuse one object and cancel prior timeout
 PASS: hide dismisses modal without executing callback
 PASS: hide cancels pending tooltip delay
@@ -96,8 +99,9 @@ PASS: toggle interaction changes local state once
 PASS: slider rounds and clamps
 PASS: slider lower bound
 PASS: dropdown selection closes list
+PASS: reusable dropdown caption remains above its metal skin
 PASS: text cap preserves UTF-8 characters
-PASS: quality switches reuse pool
+PASS: legacy quality calls retain Ultra and reuse its pool
 PASS: external ScreenGui destruction cleans integration
 PASS: yielding preload is tracked
 PASS: destroy cancels yielding preload
@@ -107,4 +111,4 @@ PASS: minimized launcher retains the original logo
 PASS: wordmark and minimized launcher use separate art
 PASS: smoke sprite reaches pooled VFX nodes
 PASS: artwork load and destruction do not leak resources
-TOTAL 96 assertions passed in mocked Luau runtime (not Roblox Studio).
+TOTAL 100 assertions passed in mocked Luau runtime (not Roblox Studio).

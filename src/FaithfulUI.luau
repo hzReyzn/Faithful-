@@ -266,8 +266,7 @@ end
 function UI:_ClampPosition(target, position, mode)
 	local viewport, size = self.Root.AbsoluteSize, target.AbsoluteSize
 	if mode == "window" then
-		-- Leave enough width for the page-title drag area, even with the wordmark
-		-- over the header. This keeps a partially offscreen window recoverable.
+		-- Keep a page-title drag area visible when partly offscreen.
 		local retained = math.min(224, size.X, viewport.X)
 		return Vector2.new(math.clamp(position.X, -size.X + retained, math.max(0, viewport.X - retained)),
 			math.clamp(position.Y, 0, math.max(0, viewport.Y - math.min(size.Y, self.Theme.Layout.Header + 56))))
@@ -295,11 +294,9 @@ function UI:BindDrag(handle, target, mode)
 				local delta = position - start
 				if delta.Magnitude < 5 and not moved then return end
 				moved = true
-				if mode == "logo" then self.LogoDetached = true end
 				if mode == "launcher" then self.LauncherDragging = true end
 				local final = self:_ClampPosition(target, origin + delta, mode)
 				target.Position = UDim2.fromOffset(final.X, final.Y)
-				if mode == "window" then self:_PlaceLogo() end
 			end,
 			Ended = function()
 				if mode == "launcher" then
@@ -309,13 +306,6 @@ function UI:BindDrag(handle, target, mode)
 			end,
 		}
 	end)
-end
-
-function UI:_PlaceLogo()
-	if self.LogoDetached then return end
-	local position = Vector2.new(self.Window.Position.X.Offset + 16, self.Window.Position.Y.Offset + 6)
-	position = self:_ClampPosition(self.Logo, position, "logo")
-	self.Logo.Position = UDim2.fromOffset(position.X, position.Y)
 end
 
 function UI:_Layout(preservePointer)
@@ -337,7 +327,6 @@ function UI:_Layout(preservePointer)
 	self.Content.Position = UDim2.fromOffset(sidebar + 18, layout.Header + 12)
 	self.Content.Size = UDim2.new(1, -sidebar - 34, 1, -layout.Header - 26)
 	self.PageTitle.TextSize = compact and 26 or 30
-	self.QualityBadge.Visible = w >= 540
 	for _, record in pairs(self.Navigation) do
 		record.Label.Position = UDim2.fromOffset(compact and 36 or 52, 0)
 		record.Label.Size = UDim2.new(1, compact and -38 or -58, 1, 0)
@@ -351,12 +340,9 @@ function UI:_Layout(preservePointer)
 	else
 		local windowPoint = self:_ClampPosition(self.Window, Vector2.new(self.Window.Position.X.Offset, self.Window.Position.Y.Offset), "window")
 		self.Window.Position = UDim2.fromOffset(windowPoint.X, windowPoint.Y)
-		for _, object in ipairs({ self.Logo, self.Launcher }) do
-			local p = self:_ClampPosition(object, Vector2.new(object.Position.X.Offset, object.Position.Y.Offset), "logo")
-			object.Position = UDim2.fromOffset(p.X, p.Y)
-		end
+		local p = self:_ClampPosition(self.Launcher, Vector2.new(self.Launcher.Position.X.Offset, self.Launcher.Position.Y.Offset), "launcher")
+		self.Launcher.Position = UDim2.fromOffset(p.X, p.Y)
 	end
-	self:_PlaceLogo()
 end
 
 function UI:_ClockText()
@@ -630,35 +616,8 @@ end
 
 function UI:ResetLayout()
 	self.WindowSize = 1
-	self.LogoDetached = false
 	self.Positioned = false
 	self:_Layout()
-	if self.Appearance.Size then self.Appearance.Size:Set(100, true) end
-end
-
-function UI:_BuildAppearance()
-	local controls = self.Appearance
-	controls.Quality = self:Dropdown(self.Pages.Visuals, "Calidad", { "Minimal", "Balanced", "Ultra" }, self.Theme.Quality,
-		function(value) self.VFX:SetQuality(value) end)
-	controls.Mist = self:Toggle(self.Pages.Visuals, "Crimson Mist", self.Theme.Effects.Mist,
-		function(value) self.VFX:SetEffect("Mist", value) end)
-	controls.Intensity = self:Slider(self.Pages.Visuals, "Niebla", 0, 100, 1, self.Theme.MistIntensity * 100,
-		function(value) self.VFX:SetMistIntensity(value / 100) end)
-	controls.Embers = self:Toggle(self.Pages.Visuals, "Partículas", self.Theme.Effects.Embers,
-		function(value) self.VFX:SetEffect("Embers", value) end)
-	controls.Border = self:Toggle(self.Pages.Visuals, "Bordes animados", self.Theme.Effects.Border,
-		function(value) self.VFX:SetEffect("Border", value) end)
-	controls.Background = self:Slider(self.Pages.Visuals, "Fondo", 15, 80, 1,
-		(1 - self.Theme.BackgroundReferenceTransparency + self.Theme.BackgroundTransparencyReduction) * 100,
-		function(value) self:Alpha(self.Background, "ImageTransparency", 1 - value / 100) end)
-	controls.ReduceMotion = self:Toggle(self.Pages.Settings, "Reducir movimiento", self.Theme.ReduceMotion,
-		function(value) self.VFX:SetReducedMotion(value) end)
-	controls.Size = self:Slider(self.Pages.Settings, "Tamaño", 78, 100, 1, 100,
-		function(value) self:SetWindowSize(value / 100) end)
-	local reset = self:Button(self.Pages.Settings, "Restablecer", function() self:ResetLayout() end)
-	self:Tooltip(reset.Button, "Restablecer posición y tamaño de Faithful")
-	self:Tooltip(controls.Mist.Button, "Niebla carmesí alrededor de Faithful")
-	self:Tooltip(controls.ReduceMotion.Button, "También respeta la accesibilidad de Roblox")
 end
 
 function UI:_Build()
@@ -691,11 +650,7 @@ function UI:_Build()
 	self.Background = self:Make("ImageLabel", self.Surface, { Name = "Background", Size = UDim2.fromScale(1, 1),
 		Image = self.Assets.Resolve(self.Assets.Background), ScaleType = Enum.ScaleType.Fit,
 		ImageTransparency = math.clamp(self.Theme.BackgroundReferenceTransparency - self.Theme.BackgroundTransparencyReduction, 0, 1), ZIndex = 6 })
-	-- Fade the baked-in title out of the top band; preserve the original PNG bytes.
-	self:Make("UIGradient", self.Background, { Rotation = 90, Enabled = self.Assets.BackgroundContainsTitle, Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.27, 1), NumberSequenceKeypoint.new(0.44, 0.1),
-		NumberSequenceKeypoint.new(0.72, 0.04), NumberSequenceKeypoint.new(1, 0.32),
-	}) })
+	-- Show the supplied artwork, including its FAITHFUL title, without an alpha mask.
 	self.InnerMistLayer = self:Make("Frame", self.Surface, { Name = "InteriorMist", Size = UDim2.fromScale(1, 1), ZIndex = 7 })
 	local inset = self:Make("Frame", self.Surface, { Name = "InsetRim", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), ZIndex = 9 })
 	self:Corner(inset, 5)
@@ -724,10 +679,6 @@ function UI:_Build()
 	end
 	self.Minimize = headerButton("Minimize", -98)
 	self.Close = headerButton("Close", -52)
-	self.QualityBadge = self:Make("TextButton", self.Header, { Name = "Quality", Text = string.upper(self.Theme.Quality), TextSize = 10,
-		Position = UDim2.new(1, -272, 0, 6), Size = UDim2.fromOffset(68, 44), AutoButtonColor = false, ZIndex = 14 })
-	self:Hover(self.QualityBadge)
-	self:Connect(self.QualityBadge.Activated, function() if self.Open and not self.Modal.Visible then self:SelectCategory("Visuals") end end)
 	local headerRule = self:Make("Frame", self.Header, { Position = UDim2.new(0, 8, 1, -1), Size = UDim2.new(1, -16, 0, 1),
 		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.3 })
 	self:Gradient(headerRule, { colors.MetalDark, colors.Crimson, colors.SteelLight, colors.MetalDark }, 0)
@@ -770,7 +721,10 @@ function UI:_Build()
 		self:Make("UIListLayout", page, { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder })
 		self.Pages[name] = page
 	end
-	self.Logo = self:Make("ImageButton", self.Root, { Name = "DraggableWordmark", Size = UDim2.fromOffset(layout.WordmarkWidth, layout.WordmarkHeight),
+	-- Native parenting keeps the wordmark attached during drag, resize and restore.
+	-- Dragging this image moves the complete window, just like its header.
+	self.Logo = self:Make("ImageButton", self.Header, { Name = "HeaderWordmark", Position = UDim2.fromOffset(16, 6),
+		Size = UDim2.fromOffset(layout.WordmarkWidth, layout.WordmarkHeight), Selectable = false,
 		Image = self.Assets.Resolve(self.Assets.Wordmark), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 60 }, "logo")
 	self.Launcher = self:Make("ImageButton", self.Root, { Name = "Reopen", Size = UDim2.fromOffset(52, 52),
 		Image = self.Assets.Resolve(self.Assets.Logo), ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, Visible = false, ZIndex = 61,
@@ -799,14 +753,13 @@ function UI:_Build()
 	self:Corner(self.CancelButton, 4); self:Corner(self.ConfirmButton, 4)
 	self:Hover(self.CancelButton)
 	self:Hover(self.ConfirmButton, function() return true end)
-	if self.Theme.AppearanceControls then self:_BuildAppearance() end
 	if self.Theme.ShowcaseControls then self:_BuildShowcase() end
 end
 
 function UI:_Bind()
 	self:BindDrag(self.DragHandle, self.Window, "window")
 	self:BindDrag(self.TitleDragHandle, self.Window, "window")
-	self:BindDrag(self.Logo, self.Logo, "logo")
+	self:BindDrag(self.Logo, self.Window, "window")
 	self:BindDrag(self.Launcher, self.Launcher, "launcher")
 	self:Tooltip(self.Close, "Cerrar")
 	self:Tooltip(self.Minimize, "Minimizar")
@@ -882,9 +835,9 @@ function UI.new(playerGui, theme, assets)
 	local self = setmetatable({
 		PlayerGui = playerGui, Theme = theme, Assets = assets, Connections = {}, Threads = {},
 		Scopes = {}, AlphaEntries = {}, AlphaLookup = {}, KeyboardHandlers = {}, TooltipOwners = {}, Pages = {}, Navigation = {},
-		ButtonStyles = {}, ButtonLookup = {}, Appearance = {}, WindowSize = 1,
+		ButtonStyles = {}, ButtonLookup = {}, WindowSize = 1,
 		Order = 0, Open = false, Destroyed = false, ActivePage = "Home", ActiveSeconds = 0,
-		SuppressLauncherUntil = 0, LogoDetached = false, Positioned = false,
+		SuppressLauncherUntil = 0, Positioned = false,
 	}, UI)
 	self:_Build()
 	self:_Bind()

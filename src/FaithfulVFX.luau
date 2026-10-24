@@ -171,21 +171,33 @@ function VFX:_MakePools()
 		maxMist = math.max(maxMist, budget.Mist)
 		maxEmbers = math.max(maxEmbers, budget.Embers)
 	end
-	maxMist, maxEmbers = math.min(maxMist, 24), math.min(maxEmbers, 32)
+	maxMist, maxEmbers = math.min(maxMist, 36), math.min(maxEmbers, 32)
 	self.SmokeUri = self.Assets.Resolve(self.Assets.Smoke)
+	local innerBottomPositions = { 0.06, 0.20, 0.80, 0.94 }
 	for i = 1, maxMist do
 		local depth = (i - 1) % 3
-		local interior = i > 12
+		local interior = i > 24
+		local edge, fraction
+		if i <= 8 then
+			edge, fraction = "bottom", (i - 0.5) / 8
+		elseif i <= 24 then
+			edge, fraction = "side", (math.floor((i - 9) / 2) + 0.5) / 8
+		elseif i <= 28 then
+			edge, fraction = "side", (math.floor((i - 25) / 2) + 0.5) / 2
+		else
+			edge, fraction = "bottom", innerBottomPositions[(i - 29) % 4 + 1]
+		end
 		local node = ui:Make("ImageLabel", interior and ui.InnerMistLayer or ui.MistLayer, { Name = "Mist" .. i,
 			AnchorPoint = Vector2.new(0.5, 0.5), Image = self.SmokeUri, ImageTransparency = 1,
 			ScaleType = Enum.ScaleType.Stretch, ZIndex = interior and 7 or 3, Visible = false })
-		-- Broad drifting shapes expand; there is no tapering flame or emissive core.
-		ui:Gradient(node, { colors.Obsidian, colors.Crimson, depth == 2 and colors.BrightCrimson or colors.Crimson, colors.CrimsonShade }, 90,
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.22, 0.08),
-				NumberSequenceKeypoint.new(0.74, 0), NumberSequenceKeypoint.new(1, 1) }))
+		-- A wider, warmer volume remains visible outside the opaque surface.
+		-- Feather the source sprite rather than tinting most of it near black.
+		ui:Gradient(node, { colors.CrimsonShade, colors.Crimson, depth == 1 and colors.BrightCrimson or colors.Crimson, colors.Crimson }, 90,
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.12, 0.18),
+				NumberSequenceKeypoint.new(0.48, 0), NumberSequenceKeypoint.new(0.82, 0.08), NumberSequenceKeypoint.new(1, 1) }))
 		table.insert(self.Mist, { Node = node, Seed = i * 1.731, Depth = depth, Interior = interior,
-			Edge = i <= 6 and "bottom" or "side", Fraction = ((i - 1) % 6 + 0.5) / 6,
-			Duration = 7.5 + depth * 2.2 + unit(i) * 2.5, Side = i % 2 == 0 and 1 or -1 })
+			Edge = edge, Fraction = fraction,
+			Duration = 10 + depth * 2.4 + unit(i) * 3, Side = i % 2 == 0 and 1 or -1 })
 	end
 	self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1] ~= nil and self.Mist[1].Node.IsLoaded
 	if self.Mist[1] then
@@ -261,36 +273,46 @@ function VFX:_Update(time, budget)
 	local ui = self.UI
 	local width, height = ui.Window.AbsoluteSize.X, ui.Window.AbsoluteSize.Y
 	if width < 50 or height < 50 then return end
-	local mistReveal = math.clamp((time - self.MistStartsAt) / 0.75, 0, 1)
+	local mistReveal = math.clamp((time - self.MistStartsAt) / 0.65, 0, 1)
 	for i, particle in ipairs(self.Mist) do
 		local node = particle.Node
 		local enabled = i <= budget.Mist and self.Enabled.Mist and self.SmokeUri ~= "" and self.Intensity > 0
 		node.Visible = enabled
 		if enabled then
 			local age = (time / particle.Duration + unit(particle.Seed)) % 1
-			local envelope = math.sin(age * PI) ^ 2
-			local sway = math.sin(time * 0.31 + particle.Seed + age * 3) * (9 + age * 18)
-			local spread = 0.8 + age * 0.8
+			-- Longer overlapping bodies avoid the empty intervals of a sine-squared
+			-- pulse. Both ends still reach zero smoothly before the pooled reset.
+			local fadeIn = math.clamp(age / 0.18, 0, 1)
+			local fadeOut = math.clamp((1 - age) / 0.30, 0, 1)
+			local envelope = (fadeIn * fadeIn * (3 - 2 * fadeIn)) * (fadeOut * fadeOut * (3 - 2 * fadeOut))
+			local sway = math.sin(time * 0.27 + particle.Seed + age * 3) * (12 + age * 20)
+				+ math.sin(time * 0.51 + particle.Seed * 2) * 4
+			local spread = 0.95 + age * 0.75
 			local x, y, w, h
 			if particle.Interior then
-				local band = 0.04 + unit(particle.Seed + 2) * 0.12
-				x = particle.Side < 0 and width * band or width * (1 - band)
-				y = height + 12 - age * math.min(145, height * 0.34)
-				w, h = math.min(210, width * 0.3), 88 + particle.Depth * 12
+				if particle.Edge == "side" then
+					x = particle.Side < 0 and 12 or width - 12
+					y = height * (0.60 + particle.Fraction * 0.32) - age * math.min(120, height * 0.30)
+					w, h = math.min(160, width * 0.30), 170
+					sway *= 0.4
+				else
+					x, y = width * particle.Fraction, height + 24 - age * math.min(150, height * 0.35)
+					w, h = math.min(240, width * 0.34), 148 + particle.Depth * 12
+				end
 			elseif particle.Edge == "bottom" then
-				x, y = width * particle.Fraction, height + 24 - age * 85
-				w, h = math.min(210, width * 0.32), 92 + particle.Depth * 9
+				x, y = width * particle.Fraction, height + 40 - age * 62
+				w, h = math.min(250, width * 0.34), 160 + particle.Depth * 14
 			else
-				x = particle.Side < 0 and -8 or width + 8
-				y = height * (0.58 + ((i - 7) % 3) * 0.16) - age * 82
-				w, h = 110 + particle.Depth * 12, 114
-				sway *= 0.55
+				x = particle.Side < 0 and -26 - particle.Depth * 5 or width + 26 + particle.Depth * 5
+				y = height * (0.35 + particle.Fraction * 0.70) - age * math.min(170, height * 0.40)
+				w, h = 162 + particle.Depth * 20, 180 + particle.Depth * 16
+				sway *= 0.5
 			end
-			node.Position = UDim2.fromOffset(x + sway, y + math.sin(age * 5 + particle.Seed) * 5)
+			node.Position = UDim2.fromOffset(x + sway, y + math.sin(age * 5 + particle.Seed) * 8)
 			node.Size = UDim2.fromOffset(w * spread, h * spread)
-			node.Rotation = math.sin(time * 0.19 + particle.Seed) * 9 + particle.Side * age * 6
-			local depthAlpha = particle.Depth == 2 and 0.65 or 1
-			local layerAlpha = particle.Interior and 0.20 or 0.68
+			node.Rotation = math.sin(time * 0.16 + particle.Seed) * 9 + particle.Side * age * 8
+			local depthAlpha = particle.Depth == 1 and 0.80 or 1
+			local layerAlpha = particle.Interior and 0.25 or 0.82
 			ui:Alpha(node, "ImageTransparency", 1 - envelope * self.Intensity * depthAlpha * layerAlpha * mistReveal)
 		end
 	end
@@ -343,13 +365,13 @@ end
 function VFX:PulseBorder()
 	self.Burst = 1
 end
-function VFX:SetQuality(quality)
-	assert(self.Theme.QualityLevels[quality], "Unknown Faithful VFX quality")
-	self.Quality = quality
-	self.UI.Gui:SetAttribute("VFXQuality", quality)
-	self.UI.QualityBadge.Text = string.upper(quality)
-	if self.UI.Appearance.Quality then self.UI.Appearance.Quality:Set(quality, true) end
+function VFX:SetQuality(_requestedQuality)
+	-- Compatibility with integrations using the earlier setter: the shipped UI
+	-- always stays on Ultra and exposes no quality or appearance selector.
+	self.Quality = "Ultra"
+	self.UI.Gui:SetAttribute("VFXQuality", self.Quality)
 	self:_StartLoop()
+	return self.Quality
 end
 function VFX:_RefreshReducedMotion()
 	local systemReduced = false
@@ -371,19 +393,15 @@ function VFX:_RefreshReducedMotion()
 end
 function VFX:SetReducedMotion(reduced)
 	self.UserReduced = reduced == true
-	if self.UI.Appearance.ReduceMotion then self.UI.Appearance.ReduceMotion:Set(self.UserReduced, true) end
 	self:_RefreshReducedMotion()
 end
 function VFX:SetMistIntensity(intensity)
 	self.Intensity = math.clamp(intensity, 0, 1)
-	if self.UI.Appearance.Intensity then self.UI.Appearance.Intensity:Set(self.Intensity * 100, true) end
 end
 
 function VFX:SetEffect(name, enabled)
 	assert(self.Enabled[name] ~= nil, "Unknown Faithful effect")
 	self.Enabled[name] = enabled == true
-	local control = self.UI.Appearance[name]
-	if control then control:Set(self.Enabled[name], true) end
 	self.UI.Gui:SetAttribute("Effect" .. name, self.Enabled[name])
 	self:_StartLoop()
 end
@@ -493,14 +511,14 @@ end
 
 function VFX.new(ui, theme, assets)
 	local self = setmetatable({ UI = ui, Theme = theme, Assets = assets, Factors = {}, ByScope = {},
-		Tweens = {}, Connections = {}, Mist = {}, Embers = {}, Edges = {}, Quality = theme.Quality,
+		Tweens = {}, Connections = {}, Mist = {}, Embers = {}, Edges = {}, Quality = "Ultra",
 		UserReduced = theme.ReduceMotion, Reduced = false, Intensity = math.clamp(theme.MistIntensity, 0, 1),
 		Enabled = { Mist = theme.Effects.Mist, Embers = theme.Effects.Embers, Border = theme.Effects.Border },
 		NextReflection = 4,
 		Visible = false, Destroyed = false, Time = 0, MistStartsAt = 0, Accumulator = 0, Burst = 0,
 		CurrentPage = ui.ActivePage, NavigationVersion = 0, VisibilityVersion = 0,
 	}, VFX)
-	assert(theme.QualityLevels[theme.Quality], "Invalid default VFX quality")
+	assert(theme.QualityLevels.Ultra, "Faithful requires its fixed Ultra preset")
 	local scopes = { "shell", "logo", "toast", "modal" }
 	for name in pairs(ui.Pages) do table.insert(scopes, "page:" .. name) end
 	for _, name in ipairs(scopes) do

@@ -4,7 +4,7 @@ local Theme = {
 	Name = "Faithful",
 	Owner = "Faithful.NativeUI.v1",
 	Version = "1.0.0",
-	Build = "crimson-mist-polish-20261024",
+	Build = "attached-wordmark-ultra-mist-20261024",
 	Colors = {
 		Obsidian = Color3.fromHex("090A0D"),
 		Charcoal = Color3.fromHex("15161C"),
@@ -30,21 +30,18 @@ local Theme = {
 	-- at 62% opacity while keeping the controls on dark readable surfaces.
 	BackgroundReferenceTransparency = 0.83,
 	BackgroundTransparencyReduction = 0.45,
-	Quality = "Ultra",
+	Quality = "Ultra", -- Fixed preset; no player-facing quality selector.
 	ReduceMotion = false,
 	RespectSystemReduceMotion = true,
-	MistIntensity = 0.72,
+	MistIntensity = 0.90,
 	Effects = { Mist = true, Embers = true, Border = true },
-	AppearanceControls = true, -- Only changes Faithful's own visual presentation.
-	-- Keep Main and Scripts clean; Visuals and Settings control this UI only.
+	-- Keep all five pages clean. No appearance/quality options are exposed.
 	-- Enable this to exercise the generic demonstration components in Main.
 	ShowcaseControls = false,
 	ConfirmClose = true,
 	Timings = { Entrance = 0.24, Exit = 0.16, PageOut = 0.09, PageIn = 0.15, Interaction = 0.13 },
 	QualityLevels = {
-		Minimal = { Mist = 0, Embers = 0, Border = false, Rate = 0 },
-		Balanced = { Mist = 0, Embers = 6, Border = true, Rate = 30 },
-		Ultra = { Mist = 18, Embers = 18, Border = true, Rate = 30 },
+		Ultra = { Mist = 32, Embers = 18, Border = true, Rate = 30 },
 	},
 }
 
