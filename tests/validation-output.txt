@@ -1,4 +1,3 @@
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
 > faithful-native-ui-dev@1.0.0 test
 > python3 tools/build.py --check && node tools/validate.mjs
@@ -19,7 +18,7 @@ PASS: background transparency reveals supplied artwork
 PASS: no native sigil drawn over the wordmark or reopen button
 PASS: wordmark header and minimized launcher are separate
 PASS: new wordmark fits the standard header
-PASS: bottom-left sidebar arch and sigil are removed
+PASS: sidebar decoration stays above navigation; bottom-left icon remains removed
 PASS: window is smaller than the previous 860x480 layout
 PASS: optional local artwork loader remains separate from UI
 PASS: asset placeholders and numeric IDs
@@ -77,9 +76,16 @@ PASS: close opens confirmation
 PASS: cancel retains window
 PASS: confirmed close remains reopenable
 PASS: responsive bounds 360x640
+PASS: whole artwork stays clear of title/sidebar with at most 6% stretch 360x640
 PASS: responsive bounds 844x390
+PASS: landscape window retains balanced proportions 844x390
+PASS: whole artwork stays clear of title/sidebar with at most 6% stretch 844x390
 PASS: responsive bounds 1280x800
+PASS: landscape window retains balanced proportions 1280x800
+PASS: whole artwork stays clear of title/sidebar with at most 6% stretch 1280x800
 PASS: responsive bounds 1920x1080
+PASS: landscape window retains balanced proportions 1920x1080
+PASS: whole artwork stays clear of title/sidebar with at most 6% stretch 1920x1080
 PASS: wordmark shrinks for compact mobile header
 PASS: touch window drag and release
 PASS: dragging wordmark moves the entire window with the same mouse delta
@@ -111,4 +117,4 @@ PASS: minimized launcher retains the original logo
 PASS: wordmark and minimized launcher use separate art
 PASS: no smoke texture is downloaded or registered
 PASS: artwork load and destruction do not leak resources
-TOTAL 100 assertions passed in mocked Luau runtime (not Roblox Studio).
+TOTAL 107 assertions passed in mocked Luau runtime (not Roblox Studio).

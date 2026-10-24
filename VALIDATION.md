@@ -1,43 +1,35 @@
 # Verificación de Faithful — 24 de octubre de 2026
 
-Revisión: `obsidian-reflection-compact-20261024`. Versión pública 1.0.0.
+Revisión: `gothic-reference-framing-20261024`. Versión 1.0.0.
 
-## Cambios solicitados
+## Resultado
 
-- Se eliminaron la niebla, sus 32 ImageLabels, sus contenedores y el código de animación/carga del sprite. El PNG original se conserva como archivo histórico del repositorio, sin descargarse ni usarse durante la inicialización.
-- Se añadió **Obsidian Reflection**, un barrido diagonal plateado con matiz carmesí dentro de la superficie. Dos capas reutilizadas con UIGradient, opacidades máximas de 12% y 3.5%, duración de 2.4 segundos y pausa de 6.5 segundos. Los textos y controles se dibujan por encima.
-- La ventana base pasa de **860 × 480 a 780 × 440**. Cabecera, texto gráfico, navegación y título se ajustaron; los botones táctiles conservan 44 px de alto. Se mantiene la adaptación a resoluciones pequeñas.
-- Los botones usan una superficie de carbón con degradado vertical más uniforme, borde neutro fino, contorno carmesí de selección y lavado carmesí lateral. El reflejo del botón es más tenue y la presión reduce su cara a 0.985, conservando el área interactiva.
-- Continúan las cinco categorías limpias, Ultra fijo, el texto unido a Header, el título del fondo visible, el contador y el botón minimizado arrastrable. Las partículas pequeñas se redujeron de 18 a 8. No se modificó ninguna mecánica del juego.
+La composición se acerca a la referencia gótica con doble marco de esquinas recortadas, arco superior, filete central, tipografía Garamond y navegación plana. La selección utiliza un indicador vertical y un contorno carmesí; minimizar y cerrar conservan áreas táctiles de 44 px con iconos sin cajas gruesas.
 
-## Ejecutado realmente
+El fondo se encaja completo en el contenido, debajo del título de página y fuera de la cabecera y la barra lateral. El cálculo usa sus dimensiones originales, 1672 × 941, y limita el estiramiento horizontal al 6%. Las diferencias de proporción mayores se absorben con márgenes oscuros. En horizontal, las pantallas bajas reducen también el ancho de la ventana para evitar un panel excesivamente ancho. El tamaño base sigue siendo 780 × 440.
 
-1. Se examinó la captura `1000192174.jpg` y la fuente vigente. La base es `e207046ebc4c6a8cafffd1e39fce9f3047b6f57b`; el blob anterior de `Faithful Exploit` es `c45739d9a798f3d1e721631a53814d1a266a0d58`. No se modificó el repositorio de referencia Reyzn X.
-2. `npm test` compiló cinco archivos de producción, el script autocontenido y el test nativo opcional con Luau/WASM (`luau-web` 1.5.1). Pasaron **100 aserciones** de lógica; el registro está en `tests/validation-output.txt`.
-3. Se comprobó que ya no existen nodos/capas de niebla ni una solicitud AssetSmoke. La prueba de carga opcional solo suministra fondo, logo y texto, y rechazaría una solicitud inesperada del sprite retirado.
-4. Se comprobaron los límites geométricos del reflejo, su ZIndex por debajo de los textos, desplazamiento, alternancia entre barrido y pausa y límites de opacidad. Se muestrearon 12 segundos de estado animado. Estas pruebas no rasterizan el efecto ni certifican su aspecto visual.
-5. Se comprobaron el nuevo contorno de selección, la presión del botón, el reflejo único de interacción y el mínimo táctil de 44 px. El movimiento reducido detuvo todos los reflejos y la compresión.
-6. Se mantuvieron las pruebas de texto unido a la ventana —ratón, toque, movimiento por código, redimensionamiento, foco y reapertura—, fondo sin máscara, Ultra fijo y páginas sin ajustes añadidos.
-7. Cambios rápidos de categoría, 30 aperturas/cierres interrumpidos, reloj, confirmaciones, notificaciones, singleton, componentes opcionales, texto UTF-8 y precarga siguieron pasando. Los ciclos de efectos no incrementaron los descendientes de la GUI; destruir dejó cero conexiones, tweens y tareas pendientes en el entorno simulado.
-8. Se comprobó la geometría a 360×640, 844×390, 1280×800 y 1920×1080. El doble de APIs no reproduce todas las reglas de layout, renderizado y entrada del motor real.
-9. El generador verificó que `Faithful Exploit` coincide con las fuentes. El empaquetador comprobó el XML y las fuentes de los cinco scripts del modelo, junto con CRC/SHA-256 del ZIP. `git diff --check` pasó.
-10. Se conservaron los bytes de todos los archivos en assets y el README original. Los recursos activos conservan las mismas URLs fijas y validaciones de caché; solo se eliminó del código la ruta de humo.
+No se modificaron los bytes ni las referencias del fondo, wordmark o logo minimizado. Siguen las cinco categorías limpias, Ultra fijo, el reflejo interno, el contador y el texto gráfico unido a la ventana. No se añadieron opciones de juego ni de calidad, ni volvió el icono inferior izquierdo.
 
-## Pendiente en Roblox y dispositivos reales
+## Comprobaciones ejecutadas
 
-- Ejecutar en Studio con los tres IDs de imagen válidos y comprobar permisos, moderación, precarga y renderizado.
-- Revisar que el reflejo se perciba suave, quede dentro del panel y conserve la lectura del arte, texto y botones en distintos fondos del juego.
-- Probar tacto, orientación, áreas seguras, foco, Activated y arrastre en dispositivos reales.
-- Ejecutar `tests/StudioSmoke.client.luau` en Studio; aquí se compiló pero no se ejecutó en el motor.
-- Verificar la carga opcional de imágenes en el entorno usado por el autor; aquí se simula el registro de assets.
-- Medir FPS, tiempo CPU/GPU y memoria. Se retiraron las capas de humo y se redujeron objetos animados, pero esto no equivale a un perfilado ni demuestra una cifra de FPS.
+- Base: commit `7a00930ee81d3b5c95d242bcd273a855fdc1b11a`; blob anterior de `Faithful Exploit`: `c5681561f90386746a266f21a0d8ef5e4ca003b9`.
+- `npm test`: compilación Luau/WASM de cinco archivos de producción, script autocontenido y prueba nativa opcional. **107 aserciones** pasaron; registro en `tests/validation-output.txt`.
+- Encuadre a 360×640, 844×390, 1280×800 y 1920×1080: la imagen queda dentro de su marco, a la derecha de la barra lateral y debajo del título, con deformación entre 0% y 6%. Las composiciones horizontales mantienen el límite de proporción 780:440.
+- Navegación rápida, arrastre con ratón/toque, título unido a la ventana, redimensionamiento, foco, reloj, minimizar, reabrir y confirmar cierre siguieron pasando. Treinta ciclos interrumpidos recuperan el estado correcto.
+- Los ciclos de VFX reutilizan sus objetos. Ocultar la interfaz detiene efectos y reloj; destruir deja cero conexiones, tweens y tareas pendientes en el doble de APIs.
+- Se conservaron las pruebas de selección, reflejo único de botón, reflejo de superficie contenido, brillo limitado, Ultra fijo y movimiento reducido.
+- Se comprobó que `Faithful Exploit` coincide con las fuentes mediante `tools/build.py --check` y que `git diff --check` no reporta errores.
+- `git diff --exit-code -- assets README.md src/FaithfulAssets.luau` confirmó que los recursos, sus rutas de carga y el README original siguen intactos.
+- Como ayuda para revisar proporciones y contraste, se exportó la jerarquía de instancias del doble de APIs y se dibujó una aproximación SVG con los PNG originales a 1100×680, 844×390 y 360×640. Este dibujo aproxima las fuentes y el renderizado; no es una captura de Roblox.
 
-No hubo acceso a una sesión ejecutable de Roblox Studio. No se presenta esta revisión como validada visualmente ni perfilada en el motor.
+## Límites
+
+No se dispone de Roblox Studio ni de un cliente ejecutable en este entorno. La compilación, simulación y revisión auxiliar no verifican rasterizado, permisos de assets, entrada táctil real ni rendimiento del motor. `tests/StudioSmoke.client.luau` se compiló, pero no se ejecutó dentro de Roblox. Falta revisar allí el resultado con las imágenes cargadas y medir su coste en dispositivos reales.
 
 ## Integridad y publicación
 
-SHA-256 de `Faithful Exploit` y de su copia `Faithful-Standalone.client.luau`:
+SHA-256 de `Faithful Exploit`:
 
-`1116581298272f0bfef59b9677874771ab2acca8bad6586aa7f0f5091f118d04`
+`d0c10047d231310c6e2351dd3c095fc1ee5eeab81e0e4f3edcf739cca81b28c6`
 
-El usuario mantiene su autorización para realizar y publicar los cambios solicitados. Se vuelve a verificar la rama remota y se publica sin forzarla.
+El usuario confirmó explícitamente publicar esta versión y sus archivos de soporte en `hzReyzn/Faithful-`, rama pública `main`, en el chat activo del 24 de octubre de 2026. Se verifica la rama remota antes de actualizarla y se conserva su historial sin forzar la actualización. El repositorio de referencia Reyzn X no se modifica.

@@ -4,10 +4,10 @@ local Theme = {
 	Name = "Faithful",
 	Owner = "Faithful.NativeUI.v1",
 	Version = "1.0.0",
-	Build = "obsidian-reflection-compact-20261024",
+	Build = "gothic-reference-framing-20261024",
 	Colors = {
-		Obsidian = Color3.fromHex("090A0D"),
-		Charcoal = Color3.fromHex("15161C"),
+		Obsidian = Color3.fromHex("090A0C"),
+		Charcoal = Color3.fromHex("151518"),
 		Crimson = Color3.fromHex("8B1E32"),
 		BrightCrimson = Color3.fromHex("C72C47"),
 		Silver = Color3.fromHex("BEB8B8"),
@@ -24,10 +24,14 @@ local Theme = {
 	Layout = {
 		Width = 780, Height = 440, Margin = 18, Header = 52,
 		MaxViewportHeight = 0.84,
-		Sidebar = 140, CompactSidebar = 102, CompactAt = 580,
-		Radius = 8, WordmarkWidth = 154, WordmarkHeight = 40, DisplayOrder = 40,
-		PageTop = 52, NavigationHeight = 44, NavigationGap = 6,
+		Sidebar = 132, CompactSidebar = 104, CompactAt = 580,
+		Radius = 3, WordmarkWidth = 154, WordmarkHeight = 40, DisplayOrder = 40,
+		PageTop = 60, NavigationHeight = 44, NavigationGap = 4,
 	},
+	-- Fit the original PNG inside the content frame, below all page headings.
+	-- A maximum 6% horizontal adjustment fills small aspect-ratio differences;
+	-- portrait screens fall back to letterboxing rather than clipping the art.
+	Artwork = { Width = 1672, Height = 941, MaxHorizontalStretch = 1.06, Inset = 6 },
 	-- The original 0.78 made artwork nearly invisible; show the supplied image
 	-- at 62% opacity while keeping the controls on dark readable surfaces.
 	BackgroundReferenceTransparency = 0.83,

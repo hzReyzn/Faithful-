@@ -1,18 +1,18 @@
 # FAITHFUL — Gothic UI & Ultra VFX
 
-Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propia interfaz; no altera personajes, jugadores ni mecánicas. Versión 1.0.0, revisión `obsidian-reflection-compact-20261024`.
+Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propia interfaz; no altera personajes, jugadores ni mecánicas. Versión 1.0.0, revisión `gothic-reference-framing-20261024`.
 
 ## Resultado y decisiones visuales
 
-- La tercera imagen guía la distribución: cabecera, navegación izquierda, contenido derecho y bordes finos. Se eliminó el adorno de arco y sigilo de la esquina inferior izquierda por petición del autor.
+- La referencia gótica guía la cabecera, los bordes de esquinas recortadas, la tipografía Garamond, la navegación plana y el arco doble superior de la barra lateral. La esquina inferior izquierda sigue sin icono ni sigilo.
 - La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda se conserva como logo del botón para reabrir la ventana. El nuevo texto gótico `FAITHFUL` ocupa el espacio del logo en la cabecera.
 - Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Todas las páginas mantienen su título y espacio limpio; se retiraron los ajustes de apariencia y el selector de calidad; no hay Movement, Player, Protection, Utilities ni funciones de juego.
 - No hay un texto FAITHFUL nativo superpuesto: el encabezado usa exclusivamente `assets/FaithfulWordmark.png` (154 × 40 como tamaño de GUI, 108 × 36 en pantallas estrechas).
-- La ventana predeterminada pasa a **780 × 440**, frente a los 860 × 480 anteriores, manteniendo adaptación a pantallas pequeñas.
-- El fondo mantiene **0.38** de `ImageTransparency` (62% opacidad base), sin gradiente ni máscara sobre su título FAITHFUL. Se conserva el título del arte además del texto gráfico de cabecera, como pidió el autor. Los bytes del PNG permanecen intactos.
+- La ventana conserva **780 × 440** como tamaño base. En pantallas horizontales bajas reduce también su ancho para mantener la composición; los controles táctiles conservan 44 px de alto.
+- El fondo mantiene **0.38** de `ImageTransparency` (62% opacidad base), sin gradiente ni máscara sobre su título FAITHFUL. Ahora se encaja completo dentro de un marco debajo del título de la página, fuera de la cabecera y la barra lateral. Se calcula el tamaño con la proporción original 1672:941 y un máximo de 6% de estiramiento horizontal; las diferencias mayores dejan márgenes oscuros en lugar de recortar. Los bytes del PNG, el wordmark y el logo minimizado permanecen intactos.
 - Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar o desactivar el ScreenGui, y continúa al volver a mostrarlo. Una sesión nueva comienza en cero.
 - Se arrastra la ventana desde la cabecera, el propio texto gráfico FAITHFUL o el área del título de la página con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo visible un área de arrastre recuperable. El texto de cabecera es hijo de Header y permanece unido a la ventana en cualquier movimiento, cambio de resolución o reapertura; arrastrarlo mueve la ventana completa. El pequeño botón de reapertura mantiene el logo cuadrado original y también es arrastrable.
-- El marco tiene doble borde metálico, biseles de esquina, halo carmesí localizado y sombra suave. Los botones tienen un degradado vertical de carbón, borde neutro fino, selección carmesí localizada y un único reflejo de interacción compartido. Conservan áreas táctiles de 44 px aunque la ventana sea más pequeña.
+- El marco tiene doble línea metálica con esquinas góticas, filete carmesí central y sombra suave. La navegación usa etiquetas Garamond, iconos lineales, indicador vertical y contorno carmesí solo para la categoría activa. Minimizar y cerrar usan iconos limpios con respuesta al toque. Se conserva un único reflejo de interacción compartido; los adornos se construyen con líneas nativas, sin nuevas descargas.
 - Cerrar solicita confirmación y oculta la interfaz. El logo de reapertura permite volver. Destruir el `ScreenGui` retira por completo sus recursos.
 
 ## Archivos
@@ -156,7 +156,7 @@ Consulta `VALIDATION.md` para separar resultados ejecutados de pruebas pendiente
 ## 8. Referencias consultadas
 
 - Código de referencia: [hzReyzn/Experimental — REYZN X UI EXPERIMENTAL](https://github.com/hzReyzn/Experimental/blob/main/REYZN%20X%20UI%20EXPERIMENTAL), blob `64c05792b807afe1fbc12f4234428923684a777c`. Se revisaron especialmente `UpdraftFire`, `NeonFlow`, el sistema de reflejo único y la presión de botones. La revisión actual conserva la inspiración de sus superficies metálicas y reflejos, y sustituye por completo la niebla por un reflejo nativo contenido en el panel. No se trasladaron funciones de juego ni lanzadores externos.
-- Destino solicitado: [hzReyzn/Faithful- — Faithful Exploit](https://github.com/hzReyzn/Faithful-/blob/main/Faithful%20Exploit). Esta revisión parte del commit `e207046ebc4c6a8cafffd1e39fce9f3047b6f57b`, cuyo archivo tenía el blob `c45739d9a798f3d1e721631a53814d1a266a0d58`. Conserva el texto unido a la ventana, el título del fondo y Ultra fijo; sustituye la niebla, reduce el tamaño y refina los botones.
+- Destino solicitado: [hzReyzn/Faithful- — Faithful Exploit](https://github.com/hzReyzn/Faithful-/blob/main/Faithful%20Exploit). Esta revisión parte del commit `7a00930ee81d3b5c95d242bcd273a855fdc1b11a`, cuyo archivo tenía el blob `c5681561f90386746a266f21a0d8ef5e4ca003b9`. Conserva los recursos originales, el texto unido a la ventana, Ultra fijo y el reflejo interno. Actualiza la composición gótica y evita que la cabecera o la barra lateral tapen el arte.
 - [Roblox: gradientes de UI](https://create.roblox.com/docs/reference/engine/classes/UIGradient).
 - [Roblox: carga de ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel#IsLoaded).
 - [Roblox: animación de UI](https://create.roblox.com/docs/ui/animation).

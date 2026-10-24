@@ -14,7 +14,8 @@ check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparenc
 check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over the wordmark or reopen button')
 check(ui.Logo.Name=='HeaderWordmark' and ui.Launcher.Name=='Reopen','wordmark header and minimized launcher are separate')
 check(ui.Logo.Size.X.Offset==154 and ui.Logo.Size.Y.Offset==40,'new wordmark fits the standard header')
-check(#ui.Sidebar:GetChildren()==2,'bottom-left sidebar arch and sigil are removed')
+check(ui.SidebarArch.Host.Position.Y.Offset==10 and #ui.Sidebar:GetChildren()==3,
+ 'sidebar decoration stays above navigation; bottom-left icon remains removed')
 check(ui.Theme.Layout.Width==780 and ui.Theme.Layout.Height==440,'window is smaller than the previous 860x480 layout')
 check(type(ui.Assets.LoadFromRepository)=='function','optional local artwork loader remains separate from UI')
 check(ui.Assets.Resolve('BACKGROUND_ASSET_ID')=='' and ui.Assets.Resolve('123')=='rbxassetid://123','asset placeholders and numeric IDs')
@@ -105,7 +106,8 @@ Input.InputEnded:Fire(press); ui.VFX:SetReducedMotion(false)
 
 ui:SelectCategory('Visuals'); Mock.Step(.3)
 local activeStyle=ui.ButtonLookup[ui.Navigation.Visuals.Button]
-check(activeStyle.Accent.Transparency<.5 and homeStyle.Accent.Transparency==1,'selected category gets the crimson outline while inactive categories stay neutral')
+check(activeStyle.Outline.Lines[1].BackgroundTransparency<.5 and homeStyle.Outline.Lines[1].BackgroundTransparency==1,
+ 'selected category gets the crimson outline while inactive categories stay neutral')
 local touchTargets=true
 for _,nav in pairs(ui.Navigation) do if nav.Button.AbsoluteSize.Y<44 then touchTargets=false end end
 check(touchTargets and ui.Close.AbsoluteSize.Y==44 and ui.Minimize.AbsoluteSize.Y==44,'smaller layout retains 44-pixel touch buttons')
@@ -178,6 +180,18 @@ ui:SetOpen(true); Mock.Step(.4)
 for _,size in ipairs({{360,640},{844,390},{1280,800},{1920,1080}}) do
  Mock.Resize(ui,size[1],size[2])
  check(ui.Window.AbsoluteSize.X<=size[1]-24 and ui.Window.AbsoluteSize.Y<=size[2]-24 and ui.Content.AbsoluteSize.X>160,'responsive bounds '..size[1]..'x'..size[2])
+ if size[1]>=size[2] then
+  check(ui.Window.AbsoluteSize.X/ui.Window.AbsoluteSize.Y<=780/440+1e-6,
+   'landscape window retains balanced proportions '..size[1]..'x'..size[2])
+ end
+ local art,frame=ui.Background,ui.ArtworkPanel
+ local ap,az,fp,fz=art.AbsolutePosition,art.AbsoluteSize,frame.AbsolutePosition,frame.AbsoluteSize
+ local ratio=(az.X/az.Y)/(1672/941)
+ check(ap.X>=fp.X and ap.Y>=fp.Y and ap.X+az.X<=fp.X+fz.X+1e-6 and ap.Y+az.Y<=fp.Y+fz.Y+1e-6
+  and ap.Y>=ui.PageTitle.AbsolutePosition.Y+ui.PageTitle.AbsoluteSize.Y
+  and ap.X>=ui.Sidebar.AbsolutePosition.X+ui.Sidebar.AbsoluteSize.X
+  and ratio>=1-1e-6 and ratio<=1.06+1e-6,
+  'whole artwork stays clear of title/sidebar with at most 6% stretch '..size[1]..'x'..size[2])
 end
 Mock.Resize(ui,360,640)
 check(ui.Logo.Size.X.Offset==108 and ui.Logo.Size.Y.Offset==36,'wordmark shrinks for compact mobile header')

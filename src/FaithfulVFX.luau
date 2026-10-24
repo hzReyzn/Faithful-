@@ -98,10 +98,18 @@ function VFX:ApplyButton(record, steady)
 	local selected, energy = record.Selection.Value, record.Energy.Value
 	local pulse = not steady and not self.Reduced and self.Enabled.Border and self.Theme.QualityLevels[self.Quality].Border
 		and math.sin(self.Time * 0.8 + record.Seed) ^ 2 or 0
-	self.UI:Alpha(record.Glow, "BackgroundTransparency", 1 - selected * (0.24 + pulse * 0.025) - energy * 0.075)
-	self.UI:Alpha(record.Edge, "Transparency", 0.78 - selected * 0.08 - energy * 0.16)
+	local flat = record.Variant ~= nil
+	self.UI:Alpha(record.Face, "BackgroundTransparency", flat and (1 - selected * 0.22 - energy * 0.10) or 0.10)
+	self.UI:Alpha(record.Glow, "BackgroundTransparency", 1 - selected * (0.28 + pulse * 0.025) - energy * 0.075)
+	self.UI:Alpha(record.Edge, "Transparency", flat and 1 or (0.78 - selected * 0.08 - energy * 0.16))
 	self.UI:Alpha(record.Accent, "Transparency", 1 - selected * (0.60 + pulse * 0.03) - energy * 0.12)
-	self.UI:Alpha(record.Lip, "BackgroundTransparency", 0.94 - selected * 0.10 - energy * 0.12)
+	self.UI:Alpha(record.Lip, "BackgroundTransparency", flat and 1 or (0.94 - selected * 0.10 - energy * 0.12))
+	if record.Outline then
+		self.UI:Alpha(record.Accent, "Transparency", 1)
+		for _, line in ipairs(record.Outline.Lines) do
+			self.UI:Alpha(line, "BackgroundTransparency", 1 - selected * (0.62 + pulse * 0.03) - energy * 0.10)
+		end
+	end
 end
 
 function VFX:BindButton(record)
