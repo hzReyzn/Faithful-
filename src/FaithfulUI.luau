@@ -170,25 +170,28 @@ function UI:Hover(button, selected)
 	self:Alpha(button, "BackgroundTransparency", 1)
 	local face = self:Make("Frame", button, { Name = "MetalFace", AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -2, 1, -2),
-		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.06, ZIndex = button.ZIndex })
-	self:Corner(face, 5)
-	self:Gradient(face, { c.Charcoal, c.Obsidian, c.MetalDark }, 105)
-	local edge = self:Stroke(face, Color3.new(1, 1, 1), 0.56)
-	local edgeGradient = self:Gradient(edge, { c.MetalDark, c.SteelLight, c.Silver, c.Crimson, c.MetalDark }, 32)
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.10, ZIndex = button.ZIndex })
+	self:Corner(face, 6)
+	self:Gradient(face, { c.ButtonTop, c.ButtonBottom }, 90)
+	local edge = self:Stroke(face, Color3.new(1, 1, 1), 0.78)
+	local edgeGradient = self:Gradient(edge, { c.Metal, c.SteelLight, c.Metal }, 90)
 	local glow = self:Make("Frame", face, { Name = "CrimsonWash", Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2),
 		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = button.ZIndex + 1 })
-	self:Corner(glow, 4)
-	local wash = self:Gradient(glow, { c.BrightCrimson, c.CrimsonShade, c.Crimson }, 22)
+	self:Corner(glow, 5)
+	local accent = self:Stroke(glow, c.Crimson, 1)
+	local wash = self:Gradient(glow, { c.Crimson, c.CrimsonShade, c.Charcoal }, 0, NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.16), NumberSequenceKeypoint.new(0.5, 0.25), NumberSequenceKeypoint.new(1, 0.80),
+	}))
 	local sheen = self:Make("Frame", face, { Name = "Reflection", Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2),
 		BackgroundColor3 = c.Bone, BackgroundTransparency = 1, ZIndex = button.ZIndex + 1 })
-	self:Corner(sheen, 4)
+	self:Corner(sheen, 5)
 	local sweep = self:Gradient(sheen, { c.Silver, c.Bone }, 24, NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.38, 1),
 		NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(0.62, 1), NumberSequenceKeypoint.new(1, 1),
 	}))
 	local lip = self:Make("Frame", face, { Name = "BeveledLip", Position = UDim2.fromOffset(9, 1), Size = UDim2.new(1, -18, 0, 1),
-		BackgroundColor3 = c.Silver, BackgroundTransparency = 0.82, ZIndex = button.ZIndex + 1 })
-	self:Gradient(lip, { c.MetalDark, c.Silver, c.MetalDark }, 0)
+		BackgroundColor3 = c.Silver, BackgroundTransparency = 0.94, ZIndex = button.ZIndex + 1 })
+	self:Gradient(lip, { c.MetalDark, c.SteelLight, c.MetalDark }, 0)
 	local caption
 	if button.Text ~= "" then
 		caption = self:Label(button, button.Text, UDim2.fromOffset(5, 0), UDim2.new(1, -10, 1, 0), button.TextSize)
@@ -197,7 +200,7 @@ function UI:Hover(button, selected)
 		self:Alpha(button, "TextTransparency", 1)
 		self:Connect(button:GetPropertyChangedSignal("Text"), function() caption.Text = button.Text end)
 	end
-	local record = { Button = button, Face = face, Edge = edge, EdgeGradient = edgeGradient, Glow = glow,
+	local record = { Button = button, Face = face, Edge = edge, Accent = accent, EdgeGradient = edgeGradient, Glow = glow,
 		Wash = wash, Sheen = sheen, Sweep = sweep, Lip = lip, Caption = caption, IsSelected = selected,
 		Scale = self:Make("UIScale", face, { Scale = 1 }),
 		Energy = self:Make("NumberValue", button, { Name = "InteractionEnergy", Value = 0 }),
@@ -326,12 +329,12 @@ function UI:_Layout(preservePointer)
 	self.Sidebar.Size = UDim2.new(0, sidebar, 1, -layout.Header)
 	self.Content.Position = UDim2.fromOffset(sidebar + 18, layout.Header + 12)
 	self.Content.Size = UDim2.new(1, -sidebar - 34, 1, -layout.Header - 26)
-	self.PageTitle.TextSize = compact and 26 or 30
+	self.PageTitle.TextSize = compact and 24 or 28
 	for _, record in pairs(self.Navigation) do
-		record.Label.Position = UDim2.fromOffset(compact and 36 or 52, 0)
-		record.Label.Size = UDim2.new(1, compact and -38 or -58, 1, 0)
-		record.Label.TextSize = compact and 12 or 14
-		record.Icon.Position = UDim2.new(0, compact and 8 or 18, 0.5, -11)
+		record.Label.Position = UDim2.fromOffset(compact and 34 or 44, 0)
+		record.Label.Size = UDim2.new(1, compact and -37 or -52, 1, 0)
+		record.Label.TextSize = compact and 12 or 13
+		record.Icon.Position = UDim2.new(0, compact and 8 or 14, 0.5, -9)
 	end
 	if not self.Positioned then
 		self.Window.Position = UDim2.fromOffset((available.X - w) / 2, (available.Y - h) / 2)
@@ -397,6 +400,7 @@ function UI:SelectCategory(name)
 		if self.VFX then self.VFX:SetButtonSelected(style)
 		else self:Alpha(style.Glow, "BackgroundTransparency", record.Selected and 0.76 or 1) end
 		record.Label.TextColor3 = record.Selected and self.Theme.Colors.Bone or self.Theme.Colors.Silver
+		record.Label.Font = record.Selected and self.Theme.Fonts.Medium or self.Theme.Fonts.Body
 	end
 	if self.VFX then self.VFX:SwitchPage(name)
 	else
@@ -631,8 +635,8 @@ function UI:_Build()
 	self.Root = self:Make("Frame", self.Gui, { Name = "SafeRoot", Size = UDim2.fromScale(1, 1) })
 	self.Window = self:Make("Frame", self.Root, { Name = "Window", Size = UDim2.fromOffset(layout.Width, layout.Height),
 		Visible = false, ClipsDescendants = false }, "shell")
-	-- A transparent scene root lets smoke escape the rim. Only the artwork and
-	-- controls are clipped by Surface, keeping the atmospheric layers behind them.
+	-- Surface clips the artwork and reflection; the scene root retains the fine
+	-- border halo, small embers and shadow around its edges.
 	for i = 3, 1, -1 do
 		local pad = i * 5
 		local shadow = self:Make("Frame", self.Window, { Name = "SoftShadow" .. i,
@@ -640,7 +644,6 @@ function UI:_Build()
 			BackgroundColor3 = Color3.new(), BackgroundTransparency = 0.92 - (3 - i) * 0.03, ZIndex = 1 })
 		self:Corner(shadow, layout.Radius + pad)
 	end
-	self.MistLayer = self:Make("Frame", self.Window, { Name = "CrimsonMist", Size = UDim2.fromScale(1, 1), ZIndex = 3 })
 	self.EmberLayer = self:Make("Frame", self.Window, { Name = "GhoulEmbers", Size = UDim2.fromScale(1, 1), ZIndex = 4 })
 	self.Surface = self:Make("Frame", self.Window, { Name = "ObsidianSurface", Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.025, ClipsDescendants = true, ZIndex = 5 })
@@ -651,7 +654,6 @@ function UI:_Build()
 		Image = self.Assets.Resolve(self.Assets.Background), ScaleType = Enum.ScaleType.Fit,
 		ImageTransparency = math.clamp(self.Theme.BackgroundReferenceTransparency - self.Theme.BackgroundTransparencyReduction, 0, 1), ZIndex = 6 })
 	-- Show the supplied artwork, including its FAITHFUL title, without an alpha mask.
-	self.InnerMistLayer = self:Make("Frame", self.Surface, { Name = "InteriorMist", Size = UDim2.fromScale(1, 1), ZIndex = 7 })
 	local inset = self:Make("Frame", self.Surface, { Name = "InsetRim", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), ZIndex = 9 })
 	self:Corner(inset, 5)
 	self:Gradient(self:Stroke(inset, Color3.new(1, 1, 1), 0.65), { colors.Metal, colors.Silver, colors.MetalDark }, 120)
@@ -671,9 +673,9 @@ function UI:_Build()
 	self.Timer = self:Label(self.Header, "00:00:00", UDim2.new(1, -194, 0, 0), UDim2.fromOffset(92, layout.Header), 12, colors.Silver)
 	self.Timer.TextXAlignment = Enum.TextXAlignment.Center
 	local function headerButton(name, offset)
-		local button = self:Make("TextButton", self.Header, { Name = name, Position = UDim2.new(1, offset, 0, 6),
+		local button = self:Make("TextButton", self.Header, { Name = name, Position = UDim2.new(1, offset, 0, 4),
 			Size = UDim2.fromOffset(44, 44), AutoButtonColor = false, ZIndex = 14 })
-		self:Icon(button, name, UDim2.fromOffset(10, 10), 24)
+		self:Icon(button, name, UDim2.fromOffset(12, 12), 20)
 		self:Hover(button)
 		return button
 	end
@@ -694,9 +696,9 @@ function UI:_Build()
 	for i, name in ipairs(CATEGORIES) do
 		local button = self:Make("TextButton", navigation, { Name = name, Size = UDim2.new(1, -3, 0, layout.NavigationHeight), LayoutOrder = i,
 			AutoButtonColor = false, ZIndex = 13 })
-		local marker = self:Make("Frame", button, { Position = UDim2.fromOffset(0, 9), Size = UDim2.new(0, 2, 1, -18),
+		local marker = self:Make("Frame", button, { Position = UDim2.fromOffset(2, 11), Size = UDim2.new(0, 2, 1, -22),
 			BackgroundColor3 = colors.BrightCrimson, BackgroundTransparency = 0.04, Visible = false, ZIndex = 17 })
-		local icon = self:Icon(button, name, UDim2.new(0, 18, 0.5, -10), 20)
+		local icon = self:Icon(button, name, UDim2.new(0, 14, 0.5, -9), 18)
 		local label = self:Label(button, name, UDim2.fromOffset(48, 0), UDim2.new(1, -52, 1, 0), 14, colors.Silver)
 		local record = { Button = button, Marker = marker, Icon = icon, Label = label, Selected = false }
 		self.Navigation[name] = record

@@ -10,7 +10,7 @@ MODULES = ['FaithfulTheme', 'FaithfulAssets', 'FaithfulUI', 'FaithfulVFX']
 
 def bundle():
     sections = [
-        '-- FAITHFUL | Native Roblox UI + Crimson Mist | 1.0.0\n',
+        '-- FAITHFUL | Native Roblox UI + Obsidian Reflection | 1.0.0\n',
         '-- Generated from src/ by tools/build.py. Edit the source modules, then rebuild.\n',
         '-- Paste this entire file into ONE LocalScript in StarterPlayerScripts.\n',
         '-- Roblox image IDs are optional when the executor provides local custom assets.\n',

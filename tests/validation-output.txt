@@ -20,7 +20,7 @@ PASS: no native sigil drawn over the wordmark or reopen button
 PASS: wordmark header and minimized launcher are separate
 PASS: new wordmark fits the standard header
 PASS: bottom-left sidebar arch and sigil are removed
-PASS: window is smaller than the previous 940x528 layout
+PASS: window is smaller than the previous 860x480 layout
 PASS: optional local artwork loader remains separate from UI
 PASS: asset placeholders and numeric IDs
 PASS: Studio fallback never downloads without local asset APIs
@@ -28,30 +28,30 @@ PASS: artwork URL is pinned to reviewed commit
 PASS: executor asset registration works
 PASS: validated PNG cache avoids duplicate downloads
 PASS: native FAITHFUL header text is replaced by the image wordmark
-PASS: Ultra uses bounded pools and one loop
-PASS: unconfigured smoke has no fake asset
-PASS: assigned smoke is visible before IsLoaded: no visibility/load deadlock
-PASS: exterior mist opacity remains bounded
-PASS: interior mist stays behind controls and faint
+PASS: Ultra uses eight embers and one ambient loop
+PASS: smoke nodes and layers are removed
+PASS: initialization does not request a smoke texture
+PASS: reflection is clipped inside the native panel
+PASS: surface reflection stays below labels and controls
+PASS: surface reflection becomes visible after entrance without an image asset
+PASS: diagonal reflection progresses across the surface
+PASS: reflection alternates smooth sweeps and pauses with bounded brightness
 PASS: border never lights more than two adjoining segments
-PASS: outer atmosphere can escape the clipped artwork surface
-PASS: exterior and interior mist remain below interactive content
-PASS: all five pages are clean; appearance controls and quality badge are absent
+PASS: reflection geometry never leaves the window
+PASS: reflection cycles reuse their objects
+PASS: all five pages stay clean without appearance or quality controls
 PASS: background artwork has no gradient hiding its title
 PASS: wordmark belongs to the window header
 PASS: legacy Balanced request cannot change fixed Ultra
 PASS: legacy Minimal request cannot downgrade effects
-PASS: fixed Ultra keeps the full active pool
-PASS: overlapping smoke cycles maintain a populated exterior across twenty seconds
-PASS: side smoke uses larger drifting volumes
-PASS: mist has separate bounded opacity inside and outside
-PASS: developer intensity setter can silence its pool
-PASS: developer effect switches remain independent
-PASS: mist updates and locked quality requests reuse existing objects
+PASS: developer reflection switch stops the surface sweep
+PASS: restarting effects reuses the same reflection and particles
 PASS: button press compresses its native metal face
 PASS: one shared reflection replaces the previous one
 PASS: focus loss restores pressed and hovered button states
-PASS: reduced motion suppresses press scaling and reflections
+PASS: reduced motion suppresses press scaling and all reflections
+PASS: selected category gets the crimson outline while inactive categories stay neutral
+PASS: smaller layout retains 44-pixel touch buttons
 PASS: wordmark stays anchored while resizing
 PASS: reset keeps the wordmark in its header
 PASS: artwork finishing loading does not interrupt an active drag
@@ -63,13 +63,13 @@ PASS: rapid navigation keeps latest request
 PASS: navigation restores alpha and position
 PASS: 30 interrupted hide/open cycles recover
 PASS: no pooled GUI allocation growth
-PASS: hide stops loop and shows reopen
+PASS: hide stops reflection and loop, and shows reopen
 PASS: counter pauses while hidden
 PASS: no hidden tweens or timer tasks
 PASS: launcher activation during drag cannot reopen
 PASS: launcher release after dragging cannot reopen
 PASS: launcher reopens
-PASS: reopen preserves the locked Ultra profile
+PASS: reopen preserves fixed Ultra and the contained reflection
 PASS: reduced motion stops ambient animation
 PASS: system reduced motion is respected
 PASS: system setting change resumes ambient effects
@@ -101,7 +101,7 @@ PASS: slider lower bound
 PASS: dropdown selection closes list
 PASS: reusable dropdown caption remains above its metal skin
 PASS: text cap preserves UTF-8 characters
-PASS: legacy quality calls retain Ultra and reuse its pool
+PASS: legacy quality calls retain Ultra and reuse effects
 PASS: external ScreenGui destruction cleans integration
 PASS: yielding preload is tracked
 PASS: destroy cancels yielding preload
@@ -109,6 +109,6 @@ PASS: background image assigned asynchronously
 PASS: new wordmark image is assigned to the open header
 PASS: minimized launcher retains the original logo
 PASS: wordmark and minimized launcher use separate art
-PASS: smoke sprite reaches pooled VFX nodes
+PASS: no smoke texture is downloaded or registered
 PASS: artwork load and destruction do not leak resources
 TOTAL 100 assertions passed in mocked Luau runtime (not Roblox Studio).

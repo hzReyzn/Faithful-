@@ -1,18 +1,18 @@
 # FAITHFUL — Gothic UI & Ultra VFX
 
-Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propia interfaz; no altera personajes, jugadores ni mecánicas. Versión 1.0.0, revisión `attached-wordmark-ultra-mist-20261024`.
+Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propia interfaz; no altera personajes, jugadores ni mecánicas. Versión 1.0.0, revisión `obsidian-reflection-compact-20261024`.
 
 ## Resultado y decisiones visuales
 
 - La tercera imagen guía la distribución: cabecera, navegación izquierda, contenido derecho y bordes finos. Se eliminó el adorno de arco y sigilo de la esquina inferior izquierda por petición del autor.
 - La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda se conserva como logo del botón para reabrir la ventana. El nuevo texto gótico `FAITHFUL` ocupa el espacio del logo en la cabecera.
 - Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Todas las páginas mantienen su título y espacio limpio; se retiraron los ajustes de apariencia y el selector de calidad; no hay Movement, Player, Protection, Utilities ni funciones de juego.
-- No hay un texto FAITHFUL nativo superpuesto: el encabezado usa exclusivamente `assets/FaithfulWordmark.png` (170 × 44 como tamaño de GUI, 108 × 36 en pantallas estrechas).
-- La ventana predeterminada pasa a **860 × 480**, frente a los 940 × 528 anteriores, manteniendo adaptación a pantallas pequeñas.
+- No hay un texto FAITHFUL nativo superpuesto: el encabezado usa exclusivamente `assets/FaithfulWordmark.png` (154 × 40 como tamaño de GUI, 108 × 36 en pantallas estrechas).
+- La ventana predeterminada pasa a **780 × 440**, frente a los 860 × 480 anteriores, manteniendo adaptación a pantallas pequeñas.
 - El fondo mantiene **0.38** de `ImageTransparency` (62% opacidad base), sin gradiente ni máscara sobre su título FAITHFUL. Se conserva el título del arte además del texto gráfico de cabecera, como pidió el autor. Los bytes del PNG permanecen intactos.
 - Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar o desactivar el ScreenGui, y continúa al volver a mostrarlo. Una sesión nueva comienza en cero.
 - Se arrastra la ventana desde la cabecera, el propio texto gráfico FAITHFUL o el área del título de la página con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo visible un área de arrastre recuperable. El texto de cabecera es hijo de Header y permanece unido a la ventana en cualquier movimiento, cambio de resolución o reapertura; arrastrarlo mueve la ventana completa. El pequeño botón de reapertura mantiene el logo cuadrado original y también es arrastrable.
-- El marco tiene doble borde metálico, biseles de esquina, halo carmesí localizado y sombra suave. Los botones usan capas de metal y carmesí con respuesta a presión y un único reflejo compartido.
+- El marco tiene doble borde metálico, biseles de esquina, halo carmesí localizado y sombra suave. Los botones tienen un degradado vertical de carbón, borde neutro fino, selección carmesí localizada y un único reflejo de interacción compartido. Conservan áreas táctiles de 44 px aunque la ventana sea más pequeña.
 - Cerrar solicita confirmación y oculta la interfaz. El logo de reapertura permite volver. Destruir el `ScreenGui` retira por completo sus recursos.
 
 ## Archivos
@@ -20,14 +20,14 @@ Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propi
 | Archivo | Responsabilidad |
 | --- | --- |
 | `src/FaithfulTheme.luau` | Paleta, medidas, transparencias, tiempos y calidad predeterminada |
-| `src/FaithfulAssets.luau` | Cuatro IDs configurables y cargador PNG local opcional para ejecutores compatibles |
+| `src/FaithfulAssets.luau` | Tres IDs configurables y cargador PNG local opcional para ejecutores compatibles |
 | `src/FaithfulUI.luau` | Construcción nativa, componentes, entrada, reloj y estado local |
-| `src/FaithfulVFX.luau` | Niebla, partículas, borde, pulsos, transiciones y limpieza de animaciones |
+| `src/FaithfulVFX.luau` | Reflejo de superficie, partículas, borde, botones, transiciones y limpieza de animaciones |
 | `src/FaithfulMain.client.luau` | Inicialización, instancia única y precarga no bloqueante |
 | `Faithful Exploit` | Versión autocontenida generada de las mismas fuentes; destino solicitado en GitHub |
 | `Faithful-Standalone.client.luau` | Copia descargable de esa versión, dentro del paquete de entrega |
 | `Faithful.rbxmx` | Carpeta nativa importable con los cuatro ModuleScripts y el LocalScript |
-| `assets/` | Fondo, logo del botón minimizado, texto de cabecera, referencia y sprite transparente de niebla |
+| `assets/` | Fondo, logo del botón minimizado, texto de cabecera y referencias originales conservadas |
 | `tests/StudioSmoke.client.luau` | Prueba opcional para ejecutar dentro de Studio |
 | `tools/build.py` | Regenera el archivo autocontenido sin ejecutar código dinámico |
 
@@ -38,26 +38,25 @@ Las versiones modular y autocontenida usan la misma implementación. Se instala 
 No se han publicado imágenes en tu cuenta de Roblox ni se han inventado IDs. **En Roblox Studio**, antes de evaluar el acabado visual:
 
 1. Abre tu experiencia en Roblox Studio y su Asset Manager.
-2. Importa `assets/FaithfulBackground.png`, `assets/FaithfulLogo.png`, `assets/FaithfulWordmark.png` y `assets/CrimsonMist.png` como imágenes bajo el propietario o grupo de la experiencia. Conserva el canal alfa del logo, el texto y la niebla.
+2. Importa `assets/FaithfulBackground.png`, `assets/FaithfulLogo.png`, `assets/FaithfulWordmark.png` como imágenes bajo el propietario o grupo de la experiencia. Conserva el canal alfa del logo y del texto.
 3. Obtén los IDs de imagen correspondientes y verifica sus permisos para la experiencia.
-4. En `FaithfulAssets`, sustituye los cuatro marcadores:
+4. En `FaithfulAssets`, sustituye los tres marcadores:
 
 ```luau
 local Assets = {
     Background = "BACKGROUND_ASSET_ID",
     Logo = "LOGO_ASSET_ID",
     Wordmark = "WORDMARK_ASSET_ID",
-    Smoke = "SMOKE_ASSET_ID",
 }
 ```
 
 Acepta el ID numérico escrito como cadena o `rbxassetid://` seguido de ese ID real. No admite enlaces a GitHub ni URLs de páginas de decals. No reemplaces el módulo entero por el bloque anterior: conserva su función `Resolve` y `return Assets`.
 
-`LayoutReference.png` no se carga en el juego: sus opciones están incrustadas en la imagen. El sprite `CrimsonMist.png` se tiñe y anima en `FaithfulVFX`, detrás de los controles. El PNG `FaithfulWordmark.png` procede del nuevo texto aprobado por el autor y se redujo a 1024 × 341 para su uso en la cabecera.
+`LayoutReference.png` no se carga en el juego: sus opciones están incrustadas en la imagen. El antiguo sprite `CrimsonMist.png` permanece en assets como archivo histórico, pero no se carga ni se usa. El nuevo reflejo se construye con Frame y UIGradient y no necesita imágenes adicionales. El PNG `FaithfulWordmark.png` procede del nuevo texto aprobado por el autor y se redujo a 1024 × 341 para su uso en la cabecera.
 
-**Alternativa para el `loadstring` en un ejecutor compatible:** si los IDs siguen sin configurar, `FaithfulAssets.LoadFromRepository()` descarga los PNG desde revisiones fijas de este repositorio (`dff138c...` para los tres recursos originales y `d7b3d9...` para el texto nuevo), comprueba firma/tamaño y los registra mediante `getcustomasset` o `getsynasset` y `writefile`. Se reutiliza una caché local validada cuando existen `isfile` y `readfile`. No se ejecutan scripts Lua externos. En ejecutores sin esas APIs, las imágenes necesitan IDs reales como en Studio.
+**Alternativa para el `loadstring` en un ejecutor compatible:** si los IDs siguen sin configurar, `FaithfulAssets.LoadFromRepository()` descarga los PNG desde revisiones fijas de este repositorio (`dff138c...` para el fondo y el logo original y `d7b3d9...` para el texto nuevo), comprueba firma/tamaño y los registra mediante `getcustomasset` o `getsynasset` y `writefile`. Se reutiliza una caché local validada cuando existen `isfile` y `readfile`. No se ejecutan scripts Lua externos. En ejecutores sin esas APIs, las imágenes necesitan IDs reales como en Studio.
 
-Sin imágenes disponibles la interfaz sigue funcionando, con fondo oscuro pero sin los recursos personalizados. El estado de los recursos se expone en `AssetBackground`, `AssetLogo`, `AssetWordmark` y `AssetSmoke` del `ScreenGui` (`Ready`, `Assigned`, `NeedsRobloxId` o un error de carga).
+Sin imágenes disponibles la interfaz sigue funcionando, con fondo oscuro pero sin los recursos personalizados. El estado de los recursos se expone en `AssetBackground`, `AssetLogo` y `AssetWordmark` del `ScreenGui` (`Ready`, `Assigned`, `NeedsRobloxId` o un error de carga).
 
 ## 2. Instalación rápida: un LocalScript
 
@@ -93,16 +92,16 @@ Configuración de desarrollo, dentro de `FaithfulTheme`:
 
 ```luau
 Quality = "Ultra",              -- Perfil fijo
-MistIntensity = 0.90,
+Reflection = { Duration = 2.4, Interval = 6.5, Opacity = 0.12, TintOpacity = 0.035 },
 ReduceMotion = false,
 RespectSystemReduceMotion = true,
-Effects = { Mist = true, Embers = true, Border = true },
+Effects = { Reflection = true, Embers = true, Border = true },
 ShowcaseControls = false,       -- Sin controles de demostración en la entrega
 ```
 
-Ultra reutiliza **32 capas de niebla y 18 partículas**, con bordes y reflejos animados. Un único Heartbeat actualiza el ambiente hasta 30 veces por segundo. Al ocultar o desactivar el ScreenGui se desconecta, y el contador se pausa. No hay creación de partículas por ciclo.
+Ultra reutiliza **un reflejo de superficie con dos capas y 8 partículas pequeñas**, además de bordes y reflejos de botones. Las 32 capas de humo anteriores se eliminaron. Un único Heartbeat actualiza el ambiente hasta 30 veces por segundo. Al ocultar o desactivar el ScreenGui se desconecta, y el contador se pausa. No hay creación de partículas por ciclo.
 
-Con movimiento reducido se detienen la niebla, las partículas, el recorrido del borde, los reflejos y el pulso continuo. Las transiciones se limitan a un fundido breve y los botones conservan su selección sin compresión.
+Con movimiento reducido se detienen las partículas, el recorrido del borde, los reflejos de superficie y botones, y el pulso continuo. Las transiciones se limitan a un fundido breve y los botones conservan su selección sin compresión.
 
 La biblioteca conserva `Button`, `Toggle`, `Slider`, `Dropdown`, `TextField`, `Separator`, `Tooltip`, `Notify` y `Confirm` para ampliar la interfaz posteriormente. Toggle, Slider y Dropdown devuelven `Set(value, silent)`; TextField expone su `Box` nativo. Los callbacks son explícitos. No se evalúa el texto introducido ni se ejecutan scripts desde la pestaña Scripts.
 
@@ -110,27 +109,25 @@ Solo para probar esos componentes, el desarrollador puede activar `ShowcaseContr
 
 ## 5. Cómo están hechos los VFX
 
-**Crimson Mist:** un sprite transparente compartido en **32 capas**, frente a las 18 anteriores. Hay 24 exteriores —8 inferiores y 16 laterales— y 8 interiores más tenues. Las exteriores se extienden fuera del marco; la superficie del panel oculta la porción que quedaría detrás del contenido. Los volúmenes laterales son más grandes, la paleta tiene más carmesí y se han alargado las fases visibles para que se solapen los ciclos.
+**Obsidian Reflection:** sustituye completamente la niebla. Una banda diagonal plateada con un matiz carmesí atraviesa suavemente la superficie durante 2.4 segundos, seguida de una pausa de 6.5 segundos. El contenedor está recortado dentro del panel y sus dos capas quedan por debajo de los textos y controles. La opacidad máxima de las capas es 12% plateada y 3.5% carmesí, antes de aplicar sus gradientes. No cubre toda la ventana de brillo simultáneamente.
 
-Cada capa nace y desaparece con curvas suaves, se expande, deriva lateralmente y asciende. Las tres profundidades usan duraciones de aproximadamente 10–18 segundos. Con intensidad 0.90, la opacidad máxima por capa es aproximadamente 74% fuera y 23% dentro; el alfa del sprite y del gradiente reducen estos valores, mientras que las superposiciones pueden aumentar la opacidad conjunta. El resultado debe revisarse visualmente en el motor. Las capas interiores y exteriores permanecen detrás de los controles.
-
-La existencia de una URI válida permite mostrar la capa aunque `IsLoaded` todavía sea falso: ese indicador se conserva como diagnóstico, sin bloquear la visibilidad. Esto evita depender de la carga de una imagen que el código mantiene oculta. Los recursos moderados, sin permisos o inaccesibles siguen requiriendo corregir su ID/carga.
+Los Frame y UIGradient se crean una vez; se animan Offset y transparencia en el mismo Heartbeat ambiental. Al ocultar la UI, desactivar ScreenGui o activar movimiento reducido, el reflejo se detiene y desaparece. No usa un sprite, descarga adicional, CanvasGroup ni un nuevo bucle de renderizado.
 
 **Crimson Border Flow:** un tramo estrecho viaja alrededor del perímetro. En las esquinas puede repartirse entre dos lados contiguos; nunca ilumina todo el borde a la vez.
 
-**Ghoul Embers:** dieciocho puntos como máximo, pequeños y semitransparentes, cerca de los laterales. No se crean instancias en cada ciclo.
+**Ghoul Embers:** ocho puntos como máximo, pequeños y semitransparentes, cerca de los laterales. No se crean instancias en cada ciclo.
 
 **Obsidian Transitions:** la última categoría solicitada gana. Se cancelan las animaciones anteriores y se normalizan posición y opacidad para impedir páginas superpuestas o fundidos acumulativos.
 
-**Crimson Pulse y reflejos:** la categoría seleccionada mantiene un lavado carmesí tenue y un gradiente metálico móvil. La presión comprime únicamente la cara del botón a 0.975; no cambia su área de entrada. Un solo reflejo diagonal recorre un botón a la vez, por interacción o aproximadamente cada 6.5 segundos. Con movimiento reducido desaparecen los reflejos, el pulso y la compresión; la selección sigue siendo legible.
+**Crimson Pulse y reflejos:** la categoría seleccionada mantiene un lavado carmesí tenue y un gradiente metálico móvil. La presión comprime únicamente la cara del botón a 0.985; no cambia su área de entrada. Un solo reflejo diagonal recorre un botón a la vez, por interacción o aproximadamente cada 6.5 segundos. Con movimiento reducido desaparecen los reflejos, el pulso y la compresión; la selección sigue siendo legible.
 
-**Faithful Entrance:** fundido breve de ventana/fondo, aparición ligeramente retrasada del logo y comienzo del borde y de la niebla. La reapertura completa no impone una introducción larga.
+**Faithful Entrance:** fundido breve de ventana/fondo, aparición ligeramente retrasada del logo y comienzo del borde y del reflejo de superficie. La reapertura completa no impone una introducción larga.
 
 La opacidad parte de valores base inmutables y factores por grupo. No se usan `CanvasGroup` de pantalla completa. No hay conexiones a `PreRender`, modificaciones de `Lighting` ni efectos 3D sobre el mundo. El único bucle ambiental se desconecta al ocultar o desactivar el ScreenGui. La reducción de movimiento deja la selección estática y detiene el bucle ambiental. Al destruir se cancelan tweens, temporizadores y precarga pendiente, y se desconectan los eventos.
 
 ## 6. Pruebas en Roblox Studio
 
-1. **Primera apertura:** revisa Output, carga de las cuatro imágenes, nitidez, título del fondo visible, texto de cabecera unido a la ventana y reloj en lugar de ONLINE.
+1. **Primera apertura:** revisa Output, carga de las tres imágenes, nitidez, título del fondo visible, texto de cabecera unido a la ventana y reloj en lugar de ONLINE.
 2. **Interacciones:** cambia rápidamente entre las cinco categorías; minimiza y reabre varias veces; confirma y cancela el cierre. El estado y el contador deben continuar correctamente.
 3. **Arrastre:** mueve la cabecera, el título de página y el propio texto gráfico: los tres deben arrastrar la ventana y mantener el texto en la cabecera. Repite con entrada táctil. Arrastra el botón de reapertura: soltarlo tras moverlo no debe abrir accidentalmente la ventana.
 4. **Resoluciones:** prueba teléfono vertical y horizontal, tableta y escritorio con Device Simulator. Verifica áreas seguras, botones de al menos 44 px y navegación desplazable en pantallas bajas.
@@ -158,8 +155,8 @@ Consulta `VALIDATION.md` para separar resultados ejecutados de pruebas pendiente
 
 ## 8. Referencias consultadas
 
-- Código de referencia: [hzReyzn/Experimental — REYZN X UI EXPERIMENTAL](https://github.com/hzReyzn/Experimental/blob/main/REYZN%20X%20UI%20EXPERIMENTAL), blob `64c05792b807afe1fbc12f4234428923684a777c`. Se revisaron especialmente `UpdraftFire`, `NeonFlow`, el sistema de reflejo único y la presión de botones. Se reutilizan sus ideas de capas, fases, superficies metálicas y opacidad con una implementación nueva de niebla carmesí. No se trasladaron funciones de juego ni lanzadores externos.
-- Destino solicitado: [hzReyzn/Faithful- — Faithful Exploit](https://github.com/hzReyzn/Faithful-/blob/main/Faithful%20Exploit). Esta corrección parte del commit `54b9fe1b0840ec542c8422277e7aecd2cad0b6e1`, cuyo archivo tenía el blob `d9ec0b3f9f02dce56ed877f4a0637fb6b996ed9f`. Conserva el arte y el acabado metálico, corrige la unión del texto a la ventana, restaura el título del fondo y retira los ajustes solicitados.
+- Código de referencia: [hzReyzn/Experimental — REYZN X UI EXPERIMENTAL](https://github.com/hzReyzn/Experimental/blob/main/REYZN%20X%20UI%20EXPERIMENTAL), blob `64c05792b807afe1fbc12f4234428923684a777c`. Se revisaron especialmente `UpdraftFire`, `NeonFlow`, el sistema de reflejo único y la presión de botones. La revisión actual conserva la inspiración de sus superficies metálicas y reflejos, y sustituye por completo la niebla por un reflejo nativo contenido en el panel. No se trasladaron funciones de juego ni lanzadores externos.
+- Destino solicitado: [hzReyzn/Faithful- — Faithful Exploit](https://github.com/hzReyzn/Faithful-/blob/main/Faithful%20Exploit). Esta revisión parte del commit `e207046ebc4c6a8cafffd1e39fce9f3047b6f57b`, cuyo archivo tenía el blob `c45739d9a798f3d1e721631a53814d1a266a0d58`. Conserva el texto unido a la ventana, el título del fondo y Ultra fijo; sustituye la niebla, reduce el tamaño y refina los botones.
 - [Roblox: gradientes de UI](https://create.roblox.com/docs/reference/engine/classes/UIGradient).
 - [Roblox: carga de ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel#IsLoaded).
 - [Roblox: animación de UI](https://create.roblox.com/docs/ui/animation).

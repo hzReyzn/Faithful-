@@ -19,7 +19,7 @@ for _, previous in ipairs(playerGui:GetChildren()) do
 end
 
 local ui = FaithfulUI.new(playerGui, Theme, Assets)
-local vfx = FaithfulVFX.new(ui, Theme, Assets)
+FaithfulVFX.new(ui, Theme)
 if script then ui:Connect(script.Destroying, function() ui:Destroy() end) end
 ui:SetOpen(true)
 
@@ -27,7 +27,7 @@ ui:SetOpen(true)
 -- executors can fetch only the pinned PNG artwork from this project's GitHub.
 -- The UI is created first; downloading cannot block the controls or session clock.
 local requested = {}
-for _, name in ipairs({ "Background", "Logo", "Wordmark", "Smoke" }) do
+for _, name in ipairs({ "Background", "Logo", "Wordmark" }) do
 	local asset = Assets.Resolve(Assets[name])
 	ui.Gui:SetAttribute("Asset" .. name, "Loading")
 	if asset ~= "" then
@@ -52,9 +52,6 @@ for _, name in ipairs({ "Background", "Logo", "Wordmark", "Smoke" }) do
 			elseif name == "Wordmark" then
 				ui.Logo.Image = uri
 				target = ui.Logo
-			else
-				vfx:SetSmokeImage(uri)
-				target = vfx.Mist[1] and vfx.Mist[1].Node
 			end
 			ui.Gui:SetAttribute("Asset" .. name, target and target.IsLoaded and "Ready" or "Assigned")
 			if target then
@@ -70,7 +67,7 @@ if #requested > 0 then
 		local ok, reason = pcall(function()
 			ContentProvider:PreloadAsync(requested, function(asset, status)
 				if ui.Destroyed then return end
-				for _, name in ipairs({ "Background", "Logo", "Wordmark", "Smoke" }) do
+				for _, name in ipairs({ "Background", "Logo", "Wordmark" }) do
 					if Assets.Resolve(Assets[name]) == asset then ui.Gui:SetAttribute("Asset" .. name, status.Name) end
 				end
 			end)

@@ -1,26 +1,23 @@
 {
   "repository": "hzReyzn/Faithful-",
   "branch": "main",
-  "base_commit": "54b9fe1b0840ec542c8422277e7aecd2cad0b6e1",
-  "build": "attached-wordmark-ultra-mist-20261024",
+  "base_commit": "e207046ebc4c6a8cafffd1e39fce9f3047b6f57b",
+  "build": "obsidian-reflection-compact-20261024",
   "publication_status": "approved_for_publication",
   "primary_file": {
     "path": "Faithful Exploit",
-    "previous_blob_sha": "d9ec0b3f9f02dce56ed877f4a0637fb6b996ed9f",
-    "sha256": "b30188c6cba738c8171e669570ea80b697e2ba6cd088362f813f5ca42f4fe3fe"
+    "previous_blob_sha": "c45739d9a798f3d1e721631a53814d1a266a0d58",
+    "sha256": "1116581298272f0bfef59b9677874771ab2acca8bad6586aa7f0f5091f118d04"
   },
   "preserve": [
     "README.md",
-    "assets/",
-    "src/FaithfulMain.client.luau"
+    "assets/"
   ],
   "update": [
     "Faithful Exploit",
-    "src/FaithfulAssets.luau",
-    "src/FaithfulTheme.luau",
-    "src/FaithfulUI.luau",
-    "src/FaithfulVFX.luau",
+    "src/",
     "tests/",
+    "tools/build.py",
     "FAITHFUL_STUDIO.md",
     "VALIDATION.md",
     "PUBLISH_PLAN.json"

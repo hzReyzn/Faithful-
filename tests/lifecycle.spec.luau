@@ -13,9 +13,9 @@ check(#ui.Pages.Main:GetChildren()==1,'default page has layout only; no gameplay
 check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparency reveals supplied artwork')
 check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over the wordmark or reopen button')
 check(ui.Logo.Name=='HeaderWordmark' and ui.Launcher.Name=='Reopen','wordmark header and minimized launcher are separate')
-check(ui.Logo.Size.X.Offset==170 and ui.Logo.Size.Y.Offset==44,'new wordmark fits the standard header')
+check(ui.Logo.Size.X.Offset==154 and ui.Logo.Size.Y.Offset==40,'new wordmark fits the standard header')
 check(#ui.Sidebar:GetChildren()==2,'bottom-left sidebar arch and sigil are removed')
-check(ui.Theme.Layout.Width==860 and ui.Theme.Layout.Height==480,'window is smaller than the previous 940x528 layout')
+check(ui.Theme.Layout.Width==780 and ui.Theme.Layout.Height==440,'window is smaller than the previous 860x480 layout')
 check(type(ui.Assets.LoadFromRepository)=='function','optional local artwork loader remains separate from UI')
 check(ui.Assets.Resolve('BACKGROUND_ASSET_ID')=='' and ui.Assets.Resolve('123')=='rbxassetid://123','asset placeholders and numeric IDs')
 local missingUri,missingStatus=ui.Assets.LoadFromRepository('Background')
@@ -42,68 +42,48 @@ ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=false; ui:_Layout
 check(ui.Brand==nil,'native FAITHFUL header text is replaced by the image wordmark')
 ui.Background.IsLoaded=true
 ui.Background.Image=''; ui.Background.IsLoaded=false
-check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==32 and #ui.VFX.Embers==18,'Ultra uses bounded pools and one loop')
-check(not ui.VFX.Mist[1].Node.Visible,'unconfigured smoke has no fake asset')
+check(ui.VFX.Heartbeat~=nil and #ui.VFX.Embers==8,'Ultra uses eight embers and one ambient loop')
+check(ui.VFX.Mist==nil and ui.MistLayer==nil and ui.InnerMistLayer==nil,'smoke nodes and layers are removed')
+check(ui.Assets.Smoke==nil and ui.Gui:GetAttribute('AssetSmoke')==nil,'initialization does not request a smoke texture')
 local instanceCount=#ui.Gui:GetDescendants()
-ui.VFX:SetSmokeImage('rbxassetid://123')
-check(ui.VFX.Mist[1].Node.Visible and not ui.VFX.SmokeReady,'assigned smoke is visible before IsLoaded: no visibility/load deadlock')
-ui.VFX.Mist[1].Node.IsLoaded=true
-Mock.Step(1)
-check(ui.VFX.Mist[1].Node.Visible and ui.VFX.Mist[1].Node.ImageTransparency>=.26,'exterior mist opacity remains bounded')
-check(ui.VFX.Mist[25].Interior and ui.VFX.Mist[25].Node.ImageTransparency>=.77,'interior mist stays behind controls and faint')
+local reflection=ui.VFX.SurfaceReflection
+check(reflection.Host.Parent==ui.Surface and reflection.Host.ClipsDescendants and ui.Surface.ClipsDescendants,'reflection is clipped inside the native panel')
+check(reflection.Silver.ZIndex<ui.Navigation.Home.Label.ZIndex and reflection.Silver.ZIndex<ui.PageTitle.ZIndex,'surface reflection stays below labels and controls')
+local beforeOffset=reflection.SilverSweep.Offset.X
+Mock.Step(.8)
+check(reflection.Host.Visible and reflection.Silver.BackgroundTransparency<.98,'surface reflection becomes visible after entrance without an image asset')
+check(reflection.SilverSweep.Offset.X>beforeOffset,'diagonal reflection progresses across the surface')
+local seenSweep,seenPause,alphaBounded=false,false,true
 local maxVisible=0
-for i=1,50 do
+for i=1,120 do
  Mock.Step(.1)
+ if reflection.Host.Visible then seenSweep=true else seenPause=true end
+ if reflection.Silver.BackgroundTransparency<.88-1e-6 or reflection.Crimson.BackgroundTransparency<.965-1e-6 then alphaBounded=false end
  local n=0
  for _,edge in ipairs(ui.VFX.Edges) do if edge.Host.Visible then n+=1 end end
  maxVisible=math.max(n,maxVisible)
 end
+check(seenSweep and seenPause and alphaBounded,'reflection alternates smooth sweeps and pauses with bounded brightness')
 check(maxVisible<=2,'border never lights more than two adjoining segments')
-check(not ui.Window.ClipsDescendants and ui.Surface.ClipsDescendants,'outer atmosphere can escape the clipped artwork surface')
-check(ui.VFX.Mist[1].Node.Parent==ui.MistLayer and ui.VFX.Mist[25].Node.Parent==ui.InnerMistLayer
- and ui.InnerMistLayer.ZIndex<ui.Content.ZIndex,'exterior and interior mist remain below interactive content')
+local rpos,rsize=reflection.Host.AbsolutePosition,reflection.Host.AbsoluteSize
+local wpos,wsize=ui.Window.AbsolutePosition,ui.Window.AbsoluteSize
+check(rpos.X>=wpos.X and rpos.Y>=wpos.Y and rpos.X+rsize.X<=wpos.X+wsize.X
+ and rpos.Y+rsize.Y<=wpos.Y+wsize.Y,'reflection geometry never leaves the window')
+check(#ui.Gui:GetDescendants()==instanceCount,'reflection cycles reuse their objects')
 local cleanPages=true
 for _,page in pairs(ui.Pages) do if #page:GetChildren()~=1 then cleanPages=false end end
-check(cleanPages and ui.Appearance==nil and ui.QualityBadge==nil,'all five pages are clean; appearance controls and quality badge are absent')
+check(cleanPages and ui.Appearance==nil and ui.QualityBadge==nil,'all five pages stay clean without appearance or quality controls')
 local backgroundMask=false
 for _,child in ipairs(ui.Background:GetChildren()) do if child:IsA('UIGradient') then backgroundMask=true end end
 check(not backgroundMask,'background artwork has no gradient hiding its title')
 check(ui.Logo.Parent==ui.Header,'wordmark belongs to the window header')
-local function visibleCount(pool)
- local count=0
- for _,particle in ipairs(pool) do if particle.Node.Visible then count+=1 end end
- return count
-end
 check(ui.VFX:SetQuality('Balanced')=='Ultra' and ui.Gui:GetAttribute('VFXQuality')=='Ultra','legacy Balanced request cannot change fixed Ultra')
 check(ui.VFX:SetQuality('Minimal')=='Ultra' and ui.VFX.Heartbeat~=nil,'legacy Minimal request cannot downgrade effects')
-check(visibleCount(ui.VFX.Mist)==32 and visibleCount(ui.VFX.Embers)==18,'fixed Ultra keeps the full active pool')
-local minDense=100
-local movingNode=ui.VFX.Mist[9].Node
-local oldMistPosition=movingNode.Position
-for i=1,100 do
- Mock.Step(.2)
- local dense=0
- for _,particle in ipairs(ui.VFX.Mist) do
-  if not particle.Interior and particle.Node.Visible and particle.Node.ImageTransparency<.75 then dense+=1 end
- end
- minDense=math.min(minDense,dense)
-end
-check(minDense>=8,'overlapping smoke cycles maintain a populated exterior across twenty seconds')
-check(movingNode.Size.X.Offset>150 and movingNode.Size.Y.Offset>170
- and movingNode.Position.Y.Offset~=oldMistPosition.Y.Offset,'side smoke uses larger drifting volumes')
-ui.VFX:SetMistIntensity(1); Mock.Step(.3)
-local alphaWithinLimits=true
-for _,particle in ipairs(ui.VFX.Mist) do
- if particle.Node.ImageTransparency<(particle.Interior and .75 or .18)-1e-6 then alphaWithinLimits=false end
-end
-check(alphaWithinLimits,'mist has separate bounded opacity inside and outside')
-ui.VFX:SetMistIntensity(0); Mock.Step(.1)
-check(visibleCount(ui.VFX.Mist)==0,'developer intensity setter can silence its pool')
-ui.VFX:SetMistIntensity(ui.Theme.MistIntensity)
-ui.VFX:SetEffect('Mist',false); Mock.Step(.1)
-check(visibleCount(ui.VFX.Mist)==0 and visibleCount(ui.VFX.Embers)==18,'developer effect switches remain independent')
-ui.VFX:SetEffect('Mist',true)
-check(#ui.Gui:GetDescendants()==instanceCount,'mist updates and locked quality requests reuse existing objects')
+ui.VFX:SetEffect('Reflection',false); Mock.Step(.4)
+check(not reflection.Host.Visible,'developer reflection switch stops the surface sweep')
+ui.VFX:SetEffect('Reflection',true)
+Mock.Step(10)
+check(#ui.Gui:GetDescendants()==instanceCount,'restarting effects reuses the same reflection and particles')
 
 -- Press/hover effects share one reflection, reset on focus loss and honor reduced motion.
 local homeButton=ui.Navigation.Home.Button
@@ -111,7 +91,7 @@ local homeStyle=ui.ButtonLookup[homeButton]
 homeButton.MouseEnter:Fire()
 local press=Mock.Pointer('MouseButton1',30,120)
 homeButton.InputBegan:Fire(press); Mock.Step(.18)
-check(math.abs(homeStyle.Scale.Scale-.975)<1e-6 and homeStyle.Energy.Value==1,'button press compresses its native metal face')
+check(math.abs(homeStyle.Scale.Scale-.985)<1e-6 and homeStyle.Energy.Value==1,'button press compresses its native metal face')
 ui.Minimize.MouseEnter:Fire(); Mock.Step(.12)
 local reflectionCount=0
 for _,style in ipairs(ui.ButtonStyles) do if style.Sheen.BackgroundTransparency<1 then reflectionCount+=1 end end
@@ -120,15 +100,22 @@ Input.WindowFocusReleased:Fire(); Mock.Step(.2)
 check(homeStyle.Pressed==nil and not homeStyle.Hover and homeStyle.Scale.Scale==1 and homeStyle.Energy.Value==0,'focus loss restores pressed and hovered button states')
 ui.VFX:SetReducedMotion(true)
 homeButton.InputBegan:Fire(press); Mock.Step(.2)
-check(homeStyle.Scale.Scale==1 and ui.VFX.Reflection==nil,'reduced motion suppresses press scaling and reflections')
+check(homeStyle.Scale.Scale==1 and ui.VFX.Reflection==nil and not reflection.Host.Visible,'reduced motion suppresses press scaling and all reflections')
 Input.InputEnded:Fire(press); ui.VFX:SetReducedMotion(false)
+
+ui:SelectCategory('Visuals'); Mock.Step(.3)
+local activeStyle=ui.ButtonLookup[ui.Navigation.Visuals.Button]
+check(activeStyle.Accent.Transparency<.5 and homeStyle.Accent.Transparency==1,'selected category gets the crimson outline while inactive categories stay neutral')
+local touchTargets=true
+for _,nav in pairs(ui.Navigation) do if nav.Button.AbsoluteSize.Y<44 then touchTargets=false end end
+check(touchTargets and ui.Close.AbsoluteSize.Y==44 and ui.Minimize.AbsoluteSize.Y==44,'smaller layout retains 44-pixel touch buttons')
 
 -- Native parenting keeps the header wordmark attached during layout changes.
 ui:SetWindowSize(.85)
 check(ui.Logo.AbsolutePosition.X-ui.Window.AbsolutePosition.X==16
  and ui.Logo.AbsolutePosition.Y-ui.Window.AbsolutePosition.Y==6,'wordmark stays anchored while resizing')
 ui:ResetLayout()
-check(ui.Window.AbsoluteSize.X==860 and ui.Logo.Parent==ui.Header,'reset keeps the wordmark in its header')
+check(ui.Window.AbsoluteSize.X==780 and ui.Logo.Parent==ui.Header,'reset keeps the wordmark in its header')
 local titleTouch=Mock.Pointer('Touch',ui.PageTitle.AbsolutePosition.X,ui.PageTitle.AbsolutePosition.Y+10)
 ui.TitleDragHandle.InputBegan:Fire(titleTouch)
 ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=true
@@ -159,7 +146,7 @@ check(ui.Open and ui.Window.Visible and ui.VFX.Factors.shell.Value==1,'30 interr
 check(#ui.Gui:GetDescendants()==instanceCount,'no pooled GUI allocation growth')
 local seconds=ui.ActiveSeconds+(ui.ClockStart and Mock.Now-ui.ClockStart or 0)
 ui:SetOpen(false); Mock.Step(3)
-check(ui.VFX.Heartbeat==nil and not ui.Window.Visible and ui.Launcher.Visible,'hide stops loop and shows reopen')
+check(ui.VFX.Heartbeat==nil and not reflection.Host.Visible and not ui.Window.Visible and ui.Launcher.Visible,'hide stops reflection and loop, and shows reopen')
 check(math.abs(ui.ActiveSeconds-seconds)<.0001 and ui.ClockStart==nil,'counter pauses while hidden')
 check(Mock.Count(ui.VFX.Tweens)==0 and Mock.Count(ui.Threads)==0,'no hidden tweens or timer tasks')
 local dragLauncher=Mock.Pointer('MouseButton1',20,730)
@@ -173,7 +160,7 @@ Mock.Step(.2)
 ui.Launcher.Activated:Fire(); Mock.Step(.7)
 check(ui.Open,'launcher reopens')
 ui.VFX:SetQuality('Balanced'); Mock.Step(.3)
-check(ui.VFX.Quality=='Ultra' and visibleCount(ui.VFX.Mist)==32,'reopen preserves the locked Ultra profile')
+check(ui.VFX.Quality=='Ultra' and ui.VFX.SurfaceReflection.Host.Parent==ui.Surface,'reopen preserves fixed Ultra and the contained reflection')
 ui.VFX:SetQuality('Ultra'); ui.VFX:SetReducedMotion(true)
 check(ui.VFX.Heartbeat==nil and ui.VFX.Reduced,'reduced motion stops ambient animation')
 ui.VFX:SetReducedMotion(false)
@@ -263,9 +250,9 @@ check(dropdownStyle.Caption.Text=='B  +' and dropdownStyle.Caption.ZIndex>dropdo
 local text=ui:TextField(ui.Pages.Main,'Test','',function() fired+=1 end)
 text.Box.Text=string.rep('é',200)
 check(utf8.len(text.Box.Text)==128,'text cap preserves UTF-8 characters')
-local smokeCount=#ui.VFX.Mist
+local effectsCount=#ui.Gui:GetDescendants()
 ui.VFX:SetQuality('Minimal'); ui.VFX:SetQuality('Ultra')
-check(#ui.VFX.Mist==smokeCount and ui.VFX.Quality=='Ultra','legacy quality calls retain Ultra and reuse its pool')
+check(#ui.Gui:GetDescendants()==effectsCount and ui.VFX.Quality=='Ultra','legacy quality calls retain Ultra and reuse effects')
 ui.Gui:Destroy(); Mock.Step(.5)
 check(ui.Destroyed and Mock.Connections==0 and #Mock.Jobs==0,'external ScreenGui destruction cleans integration')
 ContentProvider.Slow=true
@@ -275,7 +262,7 @@ ui:Destroy(); Mock.Step(.2)
 check(#Mock.Jobs==0 and Mock.Connections==0,'destroy cancels yielding preload')
 
 -- End-to-end optional artwork assignment when an executor has custom asset APIs.
-local remoteSizes={FaithfulBackground=2343282,FaithfulLogo=2561088,FaithfulWordmark=387488,CrimsonMist=933469}
+local remoteSizes={FaithfulBackground=2343282,FaithfulLogo=2561088,FaithfulWordmark=387488}
 local remoteFiles={}
 getcustomasset=function(path) return 'customasset://'..path end
 writefile=function(path,bytes) remoteFiles[path]=bytes end
@@ -292,7 +279,7 @@ check(ui.Background.Image:find('customasset://',1,true)==1,'background image ass
 check(ui.Logo.Image:find('Faithful%-wordmark%-d7b3d9')~=nil,'new wordmark image is assigned to the open header')
 check(ui.Launcher.Image:find('Faithful%-logo%-dff138')~=nil,'minimized launcher retains the original logo')
 check(ui.Logo.Image~=ui.Launcher.Image,'wordmark and minimized launcher use separate art')
-check(ui.VFX.SmokeUri:find('customasset://',1,true)==1 and ui.VFX.Mist[1].Node.Image==ui.VFX.SmokeUri,'smoke sprite reaches pooled VFX nodes')
+check(ui.Gui:GetAttribute('AssetSmoke')==nil and remoteFiles['Faithful-mist-dff138.png']==nil,'no smoke texture is downloaded or registered')
 ui:Destroy(); Mock.Step(.2)
 getcustomasset=nil;writefile=nil;isfile=nil;readfile=nil;game.HttpGet=nil
 check(Mock.Connections==0 and #Mock.Jobs==0,'artwork load and destruction do not leak resources')

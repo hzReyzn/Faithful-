@@ -98,9 +98,10 @@ function VFX:ApplyButton(record, steady)
 	local selected, energy = record.Selection.Value, record.Energy.Value
 	local pulse = not steady and not self.Reduced and self.Enabled.Border and self.Theme.QualityLevels[self.Quality].Border
 		and math.sin(self.Time * 0.8 + record.Seed) ^ 2 or 0
-	self.UI:Alpha(record.Glow, "BackgroundTransparency", 1 - selected * (0.20 + pulse * 0.045) - energy * 0.10)
-	self.UI:Alpha(record.Edge, "Transparency", 0.62 - selected * 0.30 - energy * 0.17)
-	self.UI:Alpha(record.Lip, "BackgroundTransparency", 0.86 - selected * 0.14 - energy * 0.18)
+	self.UI:Alpha(record.Glow, "BackgroundTransparency", 1 - selected * (0.24 + pulse * 0.025) - energy * 0.075)
+	self.UI:Alpha(record.Edge, "Transparency", 0.78 - selected * 0.08 - energy * 0.16)
+	self.UI:Alpha(record.Accent, "Transparency", 1 - selected * (0.60 + pulse * 0.03) - energy * 0.12)
+	self.UI:Alpha(record.Lip, "BackgroundTransparency", 0.94 - selected * 0.10 - energy * 0.12)
 end
 
 function VFX:BindButton(record)
@@ -125,7 +126,7 @@ function VFX:InteractButton(record, action)
 	if self.Destroyed then return end
 	local energy = action == "press" and 1 or (record.Hover and 0.65 or 0)
 	self:Tween(record.Energy, 0.16, { Value = energy }, "interaction")
-	self:Tween(record.Scale, 0.11, { Scale = not self.Reduced and record.Pressed and 0.975 or 1 }, "interaction")
+	self:Tween(record.Scale, 0.11, { Scale = not self.Reduced and record.Pressed and 0.985 or 1 }, "interaction")
 	if action == "hover" or action == "press" then self:RequestReflection(record) end
 end
 
@@ -142,8 +143,8 @@ function VFX:_UpdateButtons(time)
 			self:ApplyButton(record)
 			if self.Enabled.Border and self.Theme.QualityLevels[self.Quality].Border and (record.Selection.Value > 0.01 or record.Hover) then
 				local phase = time * 0.38 + record.Seed
-				record.Wash.Offset = Vector2.new(math.sin(phase) * 0.26, math.cos(phase * 0.7) * 0.04)
-				record.EdgeGradient.Offset = Vector2.new(math.sin(phase + 0.6) * 0.17, 0)
+				record.Wash.Offset = Vector2.new(math.sin(phase) * 0.12, math.cos(phase * 0.7) * 0.04)
+				record.EdgeGradient.Offset = Vector2.new(math.sin(phase + 0.6) * 0.10, 0)
 			end
 		end
 	end
@@ -155,7 +156,7 @@ function VFX:_UpdateButtons(time)
 			self.Reflection = nil
 		else
 			record.Sweep.Offset = Vector2.new(-1.1 + 2.2 * progress, 0)
-			self.UI:Alpha(record.Sheen, "BackgroundTransparency", 1 - math.sin(progress * PI) ^ 2 * 0.18)
+			self.UI:Alpha(record.Sheen, "BackgroundTransparency", 1 - math.sin(progress * PI) ^ 2 * 0.12)
 		end
 	elseif time >= self.NextReflection then
 		self.NextReflection = time + 6.5
@@ -164,47 +165,26 @@ function VFX:_UpdateButtons(time)
 	end
 end
 
-function VFX:_MakePools()
+function VFX:_MakeEffects()
 	local ui, colors = self.UI, self.Theme.Colors
-	local maxMist, maxEmbers = 0, 0
-	for _, budget in pairs(self.Theme.QualityLevels) do
-		maxMist = math.max(maxMist, budget.Mist)
-		maxEmbers = math.max(maxEmbers, budget.Embers)
-	end
-	maxMist, maxEmbers = math.min(maxMist, 36), math.min(maxEmbers, 32)
-	self.SmokeUri = self.Assets.Resolve(self.Assets.Smoke)
-	local innerBottomPositions = { 0.06, 0.20, 0.80, 0.94 }
-	for i = 1, maxMist do
-		local depth = (i - 1) % 3
-		local interior = i > 24
-		local edge, fraction
-		if i <= 8 then
-			edge, fraction = "bottom", (i - 0.5) / 8
-		elseif i <= 24 then
-			edge, fraction = "side", (math.floor((i - 9) / 2) + 0.5) / 8
-		elseif i <= 28 then
-			edge, fraction = "side", (math.floor((i - 25) / 2) + 0.5) / 2
-		else
-			edge, fraction = "bottom", innerBottomPositions[(i - 29) % 4 + 1]
-		end
-		local node = ui:Make("ImageLabel", interior and ui.InnerMistLayer or ui.MistLayer, { Name = "Mist" .. i,
-			AnchorPoint = Vector2.new(0.5, 0.5), Image = self.SmokeUri, ImageTransparency = 1,
-			ScaleType = Enum.ScaleType.Stretch, ZIndex = interior and 7 or 3, Visible = false })
-		-- A wider, warmer volume remains visible outside the opaque surface.
-		-- Feather the source sprite rather than tinting most of it near black.
-		ui:Gradient(node, { colors.CrimsonShade, colors.Crimson, depth == 1 and colors.BrightCrimson or colors.Crimson, colors.Crimson }, 90,
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.12, 0.18),
-				NumberSequenceKeypoint.new(0.48, 0), NumberSequenceKeypoint.new(0.82, 0.08), NumberSequenceKeypoint.new(1, 1) }))
-		table.insert(self.Mist, { Node = node, Seed = i * 1.731, Depth = depth, Interior = interior,
-			Edge = edge, Fraction = fraction,
-			Duration = 10 + depth * 2.4 + unit(i) * 3, Side = i % 2 == 0 and 1 or -1 })
-	end
-	self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1] ~= nil and self.Mist[1].Node.IsLoaded
-	if self.Mist[1] then
-		table.insert(self.Connections, self.Mist[1].Node:GetPropertyChangedSignal("IsLoaded"):Connect(function()
-			self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1].Node.IsLoaded
-		end))
-	end
+	local maxEmbers = math.min(self.Theme.QualityLevels.Ultra.Embers, 16)
+	-- One reusable glass-like surface reflection, clipped inside the panel.
+	-- Gradients and their sequences are created once; only Offset/alpha animate.
+	local host = ui:Make("Frame", ui.Surface, { Name = "ObsidianReflection", Position = UDim2.fromOffset(6, 6),
+		Size = UDim2.new(1, -12, 1, -12), ClipsDescendants = true, Visible = false, ZIndex = 11 })
+	local crimson = ui:Make("Frame", host, { Name = "CrimsonReflectionTint", Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = colors.Crimson, BackgroundTransparency = 1, ZIndex = 11 })
+	local silver = ui:Make("Frame", host, { Name = "SilverReflection", Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = 12 })
+	local silverSweep = ui:Gradient(silver, { colors.Silver, colors.Bone, colors.Silver }, 24, NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.38, 1), NumberSequenceKeypoint.new(0.48, 0.18),
+		NumberSequenceKeypoint.new(0.52, 0), NumberSequenceKeypoint.new(0.62, 1), NumberSequenceKeypoint.new(1, 1),
+	}))
+	local crimsonSweep = ui:Gradient(crimson, { colors.Crimson, colors.BrightCrimson, colors.Crimson }, 24, NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.30, 1), NumberSequenceKeypoint.new(0.48, 0),
+		NumberSequenceKeypoint.new(0.70, 1), NumberSequenceKeypoint.new(1, 1),
+	}))
+	self.SurfaceReflection = { Host = host, Silver = silver, Crimson = crimson, SilverSweep = silverSweep, CrimsonSweep = crimsonSweep }
 	for i = 1, maxEmbers do
 		local size = 1.2 + unit(i) * 1.8
 		local node = ui:Make("Frame", ui.EmberLayer, { Name = "Ember" .. i, AnchorPoint = Vector2.new(0.5, 0.5),
@@ -228,22 +208,41 @@ function VFX:_MakePools()
 	end
 end
 
--- Assigned images become visible as soon as their URI exists. IsLoaded is
--- diagnostic only: hiding a node until it reports loaded can delay the request.
-function VFX:SetSmokeImage(uri)
-	if self.Destroyed then return end
-	local changed = self.SmokeUri ~= (uri or "")
-	self.SmokeUri = uri or ""
-	for _, particle in ipairs(self.Mist) do particle.Node.Image = self.SmokeUri end
-	self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1] ~= nil and self.Mist[1].Node.IsLoaded
-	if changed then self.MistStartsAt = self.Time end
-	if self.Visible and not self.Reduced and self.UI.Gui.Enabled then self:_Update(self.Time, self.Theme.QualityLevels[self.Quality]) end
+function VFX:_UpdateSurfaceReflection(time)
+	local reflection = self.SurfaceReflection
+	if not self.Enabled.Reflection then reflection.Host.Visible = false; return end
+	if not self.SurfaceSweepStart then
+		if time < self.NextSurfaceReflection then reflection.Host.Visible = false; return end
+		self.SurfaceSweepStart = time
+	end
+	local config = self.Theme.Reflection
+	local progress = (time - self.SurfaceSweepStart) / math.max(0.4, config.Duration)
+	if progress >= 1 then
+		reflection.Host.Visible = false
+		self.SurfaceSweepStart = nil
+		self.NextSurfaceReflection = time + math.max(1, config.Interval)
+		self.UI:Alpha(reflection.Silver, "BackgroundTransparency", 1)
+		self.UI:Alpha(reflection.Crimson, "BackgroundTransparency", 1)
+		return
+	end
+	local travel = progress * progress * (3 - 2 * progress)
+	local envelope = math.sin(progress * PI) ^ 2
+	reflection.Host.Visible = true
+	reflection.SilverSweep.Offset = Vector2.new(-1.25 + 2.5 * travel, 0)
+	reflection.CrimsonSweep.Offset = Vector2.new(-1.34 + 2.5 * travel, 0)
+	self.UI:Alpha(reflection.Silver, "BackgroundTransparency", 1 - envelope * math.clamp(config.Opacity, 0, 0.18))
+	self.UI:Alpha(reflection.Crimson, "BackgroundTransparency", 1 - envelope * math.clamp(config.TintOpacity, 0, 0.06))
 end
 
 function VFX:_StopLoop()
 	if self.Heartbeat then self.Heartbeat:Disconnect(); self.Heartbeat = nil end
 	self.Accumulator = 0
-	for _, particle in ipairs(self.Mist) do particle.Node.Visible = false end
+	self.SurfaceSweepStart = nil
+	if self.SurfaceReflection then
+		self.SurfaceReflection.Host.Visible = false
+		self.UI:Alpha(self.SurfaceReflection.Silver, "BackgroundTransparency", 1)
+		self.UI:Alpha(self.SurfaceReflection.Crimson, "BackgroundTransparency", 1)
+	end
 	for _, particle in ipairs(self.Embers) do particle.Node.Visible = false end
 	for _, edge in ipairs(self.Edges) do edge.Host.Visible = false end
 	if self.Reflection then self.UI:Alpha(self.Reflection.Record.Sheen, "BackgroundTransparency", 1) end
@@ -273,49 +272,7 @@ function VFX:_Update(time, budget)
 	local ui = self.UI
 	local width, height = ui.Window.AbsoluteSize.X, ui.Window.AbsoluteSize.Y
 	if width < 50 or height < 50 then return end
-	local mistReveal = math.clamp((time - self.MistStartsAt) / 0.65, 0, 1)
-	for i, particle in ipairs(self.Mist) do
-		local node = particle.Node
-		local enabled = i <= budget.Mist and self.Enabled.Mist and self.SmokeUri ~= "" and self.Intensity > 0
-		node.Visible = enabled
-		if enabled then
-			local age = (time / particle.Duration + unit(particle.Seed)) % 1
-			-- Longer overlapping bodies avoid the empty intervals of a sine-squared
-			-- pulse. Both ends still reach zero smoothly before the pooled reset.
-			local fadeIn = math.clamp(age / 0.18, 0, 1)
-			local fadeOut = math.clamp((1 - age) / 0.30, 0, 1)
-			local envelope = (fadeIn * fadeIn * (3 - 2 * fadeIn)) * (fadeOut * fadeOut * (3 - 2 * fadeOut))
-			local sway = math.sin(time * 0.27 + particle.Seed + age * 3) * (12 + age * 20)
-				+ math.sin(time * 0.51 + particle.Seed * 2) * 4
-			local spread = 0.95 + age * 0.75
-			local x, y, w, h
-			if particle.Interior then
-				if particle.Edge == "side" then
-					x = particle.Side < 0 and 12 or width - 12
-					y = height * (0.60 + particle.Fraction * 0.32) - age * math.min(120, height * 0.30)
-					w, h = math.min(160, width * 0.30), 170
-					sway *= 0.4
-				else
-					x, y = width * particle.Fraction, height + 24 - age * math.min(150, height * 0.35)
-					w, h = math.min(240, width * 0.34), 148 + particle.Depth * 12
-				end
-			elseif particle.Edge == "bottom" then
-				x, y = width * particle.Fraction, height + 40 - age * 62
-				w, h = math.min(250, width * 0.34), 160 + particle.Depth * 14
-			else
-				x = particle.Side < 0 and -26 - particle.Depth * 5 or width + 26 + particle.Depth * 5
-				y = height * (0.35 + particle.Fraction * 0.70) - age * math.min(170, height * 0.40)
-				w, h = 162 + particle.Depth * 20, 180 + particle.Depth * 16
-				sway *= 0.5
-			end
-			node.Position = UDim2.fromOffset(x + sway, y + math.sin(age * 5 + particle.Seed) * 8)
-			node.Size = UDim2.fromOffset(w * spread, h * spread)
-			node.Rotation = math.sin(time * 0.16 + particle.Seed) * 9 + particle.Side * age * 8
-			local depthAlpha = particle.Depth == 1 and 0.80 or 1
-			local layerAlpha = particle.Interior and 0.25 or 0.82
-			ui:Alpha(node, "ImageTransparency", 1 - envelope * self.Intensity * depthAlpha * layerAlpha * mistReveal)
-		end
-	end
+	self:_UpdateSurfaceReflection(time)
 	for i, particle in ipairs(self.Embers) do
 		local node = particle.Node
 		node.Visible = i <= budget.Embers and self.Enabled.Embers
@@ -395,10 +352,6 @@ function VFX:SetReducedMotion(reduced)
 	self.UserReduced = reduced == true
 	self:_RefreshReducedMotion()
 end
-function VFX:SetMistIntensity(intensity)
-	self.Intensity = math.clamp(intensity, 0, 1)
-end
-
 function VFX:SetEffect(name, enabled)
 	assert(self.Enabled[name] ~= nil, "Unknown Faithful effect")
 	self.Enabled[name] = enabled == true
@@ -468,8 +421,8 @@ function VFX:SetVisible(visible)
 	self:_StopLoop()
 	self:_NormalizePages()
 	if visible then
-		-- Begin mist after the logo reveal, then let it gather gradually at the edges.
-		self.MistStartsAt = self.Time + 0.15
+		-- A short contained reflection follows the header reveal.
+		self.NextSurfaceReflection = self.Time + 0.20
 		self.UI.Window.Visible = true
 		self.UI.Logo.Visible = true
 		self.UI.Launcher.Visible = false
@@ -509,13 +462,13 @@ function VFX:Destroy()
 	self.Connections = {}
 end
 
-function VFX.new(ui, theme, assets)
-	local self = setmetatable({ UI = ui, Theme = theme, Assets = assets, Factors = {}, ByScope = {},
-		Tweens = {}, Connections = {}, Mist = {}, Embers = {}, Edges = {}, Quality = "Ultra",
-		UserReduced = theme.ReduceMotion, Reduced = false, Intensity = math.clamp(theme.MistIntensity, 0, 1),
-		Enabled = { Mist = theme.Effects.Mist, Embers = theme.Effects.Embers, Border = theme.Effects.Border },
-		NextReflection = 4,
-		Visible = false, Destroyed = false, Time = 0, MistStartsAt = 0, Accumulator = 0, Burst = 0,
+function VFX.new(ui, theme)
+	local self = setmetatable({ UI = ui, Theme = theme, Factors = {}, ByScope = {},
+		Tweens = {}, Connections = {}, Embers = {}, Edges = {}, Quality = "Ultra",
+		UserReduced = theme.ReduceMotion, Reduced = false,
+		Enabled = { Reflection = theme.Effects.Reflection, Embers = theme.Effects.Embers, Border = theme.Effects.Border },
+		NextReflection = 4, NextSurfaceReflection = 0.20,
+		Visible = false, Destroyed = false, Time = 0, Accumulator = 0, Burst = 0,
 		CurrentPage = ui.ActivePage, NavigationVersion = 0, VisibilityVersion = 0,
 	}, VFX)
 	assert(theme.QualityLevels.Ultra, "Faithful requires its fixed Ultra preset")
@@ -530,7 +483,7 @@ function VFX.new(ui, theme, assets)
 	end
 	for _, entry in ipairs(ui.AlphaEntries) do self:RegisterEntry(entry) end
 	ui.VFX = self
-	self:_MakePools()
+	self:_MakeEffects()
 	for _, record in ipairs(ui.ButtonStyles) do self:BindButton(record) end
 	for name, enabled in pairs(self.Enabled) do ui.Gui:SetAttribute("Effect" .. name, enabled) end
 	-- ReducedMotionEnabled is read defensively for older client/API environments.
