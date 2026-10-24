@@ -1,12 +1,26 @@
---!strict
--- Upload the supplied PNGs to your experience's owner/group, then paste their
--- Roblox IMAGE asset IDs here. A GitHub URL or a decal page URL is not an image ID.
+--!nonstrict
+-- Native Roblox images take priority. When no ID is configured, compatible
+-- executors may cache these fixed PNGs using their local custom-asset API.
+-- No downloaded content is ever executed as Lua.
 local Assets = {
 	Background = "BACKGROUND_ASSET_ID", -- assets/FaithfulBackground.png (image 1)
 	Logo = "LOGO_ASSET_ID",             -- assets/FaithfulLogo.png (image 2)
 	Smoke = "SMOKE_ASSET_ID",           -- assets/CrimsonMist.png (transparent sprite)
 	BackgroundContainsTitle = true,
 }
+
+-- Pin the existing, reviewed artwork bytes rather than fetching mutable files.
+local BASE = "https://raw.githubusercontent.com/hzReyzn/Faithful-/dff138c05914f15c3c84bca1caef13a11969814b/assets/"
+local remote = {
+	Background = { Url = BASE .. "FaithfulBackground.png", File = "Faithful-background-dff138.png", Bytes = 2343282 },
+	Logo = { Url = BASE .. "FaithfulLogo.png", File = "Faithful-logo-dff138.png", Bytes = 2561088 },
+	Smoke = { Url = BASE .. "CrimsonMist.png", File = "Faithful-mist-dff138.png", Bytes = 933469 },
+}
+
+local PNG_MAGIC = "\137PNG\r\n\26\n"
+local function validPNG(data, expectedSize)
+	return type(data) == "string" and #data == expectedSize and data:sub(1, 8) == PNG_MAGIC
+end
 
 function Assets.Resolve(value: string): string
 	local digits = value:match("^rbxassetid://(%d+)$") or value:match("^(%d+)$")
@@ -15,6 +29,41 @@ function Assets.Resolve(value: string): string
 		return "rbxassetid://" .. digits
 	end
 	return "" -- Unconfigured assets never become invented or invalid requests.
+end
+
+-- Roblox Studio has no getcustomasset/writefile functions. It continues to use
+-- the configured Roblox image IDs and never calls HttpGet through this path.
+function Assets.LoadFromRepository(name: string): (string, string)
+	local entry = remote[name]
+	if not entry then return "", "Unknown" end
+	local customAsset = getcustomasset or getsynasset
+	if type(customAsset) ~= "function" or type(writefile) ~= "function" then
+		return "", "NeedsRobloxId"
+	end
+
+	local cached = false
+	if type(isfile) == "function" and type(readfile) == "function" then
+		local ok, bytes = pcall(function()
+			if isfile(entry.File) then return readfile(entry.File) end
+		end)
+		cached = ok and validPNG(bytes, entry.Bytes)
+	end
+
+	if not cached then
+		local downloaded = false
+		for _ = 1, 2 do
+			local ok, bytes = pcall(function() return game:HttpGet(entry.Url) end)
+			if ok and validPNG(bytes, entry.Bytes) then
+				local wrote = pcall(writefile, entry.File, bytes)
+				if wrote then downloaded = true; break end
+			end
+		end
+		if not downloaded then return "", "DownloadFailed" end
+	end
+
+	local ok, uri = pcall(customAsset, entry.File)
+	if not ok or type(uri) ~= "string" or uri == "" then return "", "RegistrationFailed" end
+	return uri, "Assigned"
 end
 
 return Assets

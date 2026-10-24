@@ -13,8 +13,8 @@ def bundle():
         '-- FAITHFUL | Native Roblox UI + Crimson Mist | 1.0.0\n',
         '-- Generated from src/ by tools/build.py. Edit the source modules, then rebuild.\n',
         '-- Paste this entire file into ONE LocalScript in StarterPlayerScripts.\n',
-        '-- Configure BACKGROUND_ASSET_ID, LOGO_ASSET_ID and SMOKE_ASSET_ID below.\n',
-        '-- UI only: no gameplay modifications, network execution or external modules.\n\n',
+        '-- Roblox image IDs are optional when the executor provides local custom assets.\n',
+        '-- UI only: no gameplay modifications, dynamic Lua execution or external modules.\n\n',
     ]
     for name in MODULES:
         source = (ROOT / 'src' / f'{name}.luau').read_text()

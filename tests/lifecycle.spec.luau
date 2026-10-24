@@ -10,8 +10,30 @@ check(ui.Open and ui.Window.Visible and ui.Logo.Visible and not ui.Launcher.Visi
 check(Mock.Count(ui.Pages)==5 and ui.Pages.Home.Visible,'only five pages, Home active')
 check(ui.Pages.Main:FindFirstAncestorWhichIsA('ScreenGui')==ui.Gui,'native ScreenGui hierarchy')
 check(#ui.Pages.Main:GetChildren()==1,'default page has layout only; no gameplay controls')
-check(math.abs(ui.Background.ImageTransparency-.78)<1e-8,'background transparency is 0.78')
+check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparency reveals supplied artwork')
+check(ui.Theme.Layout.Width==940 and ui.Theme.Layout.Height==528,'window follows compact 16:9 dimensions')
+check(type(ui.Assets.LoadFromRepository)=='function','optional local artwork loader remains separate from UI')
 check(ui.Assets.Resolve('BACKGROUND_ASSET_ID')=='' and ui.Assets.Resolve('123')=='rbxassetid://123','asset placeholders and numeric IDs')
+local missingUri,missingStatus=ui.Assets.LoadFromRepository('Background')
+check(missingUri=='' and missingStatus=='NeedsRobloxId','Studio fallback never downloads without local asset APIs')
+local cachedBytes={}
+local downloadCount=0
+local validBytes='\137PNG\r\n\26\n'..string.rep('x',2343282-8)
+getcustomasset=function(path) return 'customasset://'..path end
+writefile=function(path,bytes) cachedBytes[path]=bytes end
+isfile=function(path) return cachedBytes[path]~=nil end
+readfile=function(path) return cachedBytes[path] end
+local oldHttpGet=game.HttpGet
+game.HttpGet=function(_,url)
+ downloadCount+=1
+ check(url:find('dff138c05914f15c3c84bca1caef13a11969814b',1,true)~=nil,'artwork URL is pinned to reviewed commit')
+ return validBytes
+end
+local firstUri,firstStatus=ui.Assets.LoadFromRepository('Background')
+local secondUri,secondStatus=ui.Assets.LoadFromRepository('Background')
+check(firstStatus=='Assigned' and secondStatus=='Assigned' and firstUri==secondUri,'executor asset registration works')
+check(downloadCount==1,'validated PNG cache avoids duplicate downloads')
+getcustomasset=nil;writefile=nil;isfile=nil;readfile=nil;game.HttpGet=oldHttpGet
 ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=true
 check(not ui.Brand.Visible,'loaded background title is not duplicated')
 ui.Background.Image=''; ui.Background.IsLoaded=false
@@ -146,5 +168,26 @@ ui=startConfigured(); Mock.Step(.1)
 check(ui.Threads.preload~=nil,'yielding preload is tracked')
 ui:Destroy(); Mock.Step(.2)
 check(#Mock.Jobs==0 and Mock.Connections==0,'destroy cancels yielding preload')
+
+-- End-to-end optional artwork assignment when an executor has custom asset APIs.
+local remoteSizes={FaithfulBackground=2343282,FaithfulLogo=2561088,CrimsonMist=933469}
+local remoteFiles={}
+getcustomasset=function(path) return 'customasset://'..path end
+writefile=function(path,bytes) remoteFiles[path]=bytes end
+isfile=function(path) return remoteFiles[path]~=nil end
+readfile=function(path) return remoteFiles[path] end
+game.HttpGet=function(_,url)
+ for name,size in pairs(remoteSizes) do
+  if url:find(name,1,true) then return '\137PNG\r\n\26\n'..string.rep('x',size-8) end
+ end
+ error('Unexpected artwork URL')
+end
+ui=start(); Mock.Step(.3)
+check(ui.Background.Image:find('customasset://',1,true)==1,'background image assigned asynchronously')
+check(ui.Logo.Image:find('customasset://',1,true)==1 and ui.Launcher.Image==ui.Logo.Image,'logo and launcher share the supplied artwork')
+check(ui.VFX.SmokeUri:find('customasset://',1,true)==1 and ui.VFX.Mist[1].Node.Image==ui.VFX.SmokeUri,'smoke sprite reaches pooled VFX nodes')
+ui:Destroy(); Mock.Step(.2)
+getcustomasset=nil;writefile=nil;isfile=nil;readfile=nil;game.HttpGet=nil
+check(Mock.Connections==0 and #Mock.Jobs==0,'artwork load and destruction do not leak resources')
 print('TOTAL '..passes..' assertions passed in mocked Luau runtime (not Roblox Studio).')
 return passes

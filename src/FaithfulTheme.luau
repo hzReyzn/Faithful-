@@ -16,13 +16,14 @@ local Theme = {
 	},
 	Fonts = { Body = Enum.Font.Gotham, Medium = Enum.Font.GothamMedium, Display = Enum.Font.Garamond },
 	Layout = {
-		Width = 1080, Height = 640, Margin = 12, Header = 64,
-		Sidebar = 174, CompactSidebar = 108, CompactAt = 620,
-		Radius = 7, LogoSize = 48, DisplayOrder = 40,
+		Width = 940, Height = 528, Margin = 16, Header = 58,
+		Sidebar = 160, CompactSidebar = 98, CompactAt = 600,
+		Radius = 7, LogoSize = 44, DisplayOrder = 40,
 	},
-	-- 0.83 is the existing Reyzn X reference value; subtract 5 percentage points.
+	-- The original 0.78 made artwork nearly invisible; show the supplied image
+	-- at 62% opacity while keeping the controls on dark readable surfaces.
 	BackgroundReferenceTransparency = 0.83,
-	BackgroundTransparencyReduction = 0.05,
+	BackgroundTransparencyReduction = 0.45,
 	Quality = "Ultra",
 	ReduceMotion = false,
 	RespectSystemReduceMotion = true,

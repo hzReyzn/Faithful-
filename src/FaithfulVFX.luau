@@ -94,6 +94,7 @@ function VFX:_MakePools()
 	-- Cap caller-supplied budgets to prevent accidental runaway allocation.
 	maxMist, maxEmbers = math.min(maxMist, 24), math.min(maxEmbers, 32)
 	local texture = self.Assets.Resolve(self.Assets.Smoke)
+	self.SmokeUri = texture
 	for i = 1, maxMist do
 		local depth = (i - 1) % 3
 		local node = ui:Make("ImageLabel", ui.MistLayer, { Name = "Mist" .. i,
@@ -114,10 +115,10 @@ function VFX:_MakePools()
 		table.insert(self.Mist, { Node = node, Seed = i * 1.731, Depth = depth,
 			Duration = 8.4 + depth * 2.2 + unit(i) * 3, Side = i % 2 == 0 and 1 or -1 })
 	end
-	self.SmokeReady = texture ~= "" and self.Mist[1] ~= nil and self.Mist[1].Node.IsLoaded
+	self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1] ~= nil and self.Mist[1].Node.IsLoaded
 	if self.Mist[1] then
 		table.insert(self.Connections, self.Mist[1].Node:GetPropertyChangedSignal("IsLoaded"):Connect(function()
-			self.SmokeReady = texture ~= "" and self.Mist[1].Node.IsLoaded
+			self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1].Node.IsLoaded
 		end))
 	end
 	for i = 1, maxEmbers do
@@ -137,6 +138,15 @@ function VFX:_MakePools()
 				NumberSequenceKeypoint.new(0.55, 0.12), NumberSequenceKeypoint.new(1, 1) }) })
 		table.insert(self.Edges, { Host = host, Line = line, Vertical = vertical, Reverse = i >= 3 })
 	end
+end
+
+-- Called when the optional executor asset loader finishes after UI startup.
+-- Reuse all existing smoke nodes; do not allocate new particles or connections.
+function VFX:SetSmokeImage(uri)
+	if self.Destroyed then return end
+	self.SmokeUri = uri or ""
+	for _, particle in ipairs(self.Mist) do particle.Node.Image = self.SmokeUri end
+	self.SmokeReady = self.SmokeUri ~= "" and self.Mist[1] ~= nil and self.Mist[1].Node.IsLoaded
 end
 
 function VFX:_StopLoop()

@@ -19,17 +19,49 @@ for _, previous in ipairs(playerGui:GetChildren()) do
 end
 
 local ui = FaithfulUI.new(playerGui, Theme, Assets)
-FaithfulVFX.new(ui, Theme, Assets)
+local vfx = FaithfulVFX.new(ui, Theme, Assets)
 if script then ui:Connect(script.Destroying, function() ui:Destroy() end) end
 ui:SetOpen(true)
 
--- Native Roblox delivery only. No HTTP downloads, dynamic execution or executor APIs.
--- Preloading runs separately, so missing permissions/assets cannot block the controls.
+-- A configured Roblox image ID works in Studio. Without an ID, compatible
+-- executors can fetch only the pinned PNG artwork from this project's GitHub.
+-- The UI is created first; downloading cannot block the controls or session clock.
 local requested = {}
 for _, name in ipairs({ "Background", "Logo", "Smoke" }) do
 	local asset = Assets.Resolve(Assets[name])
-	ui.Gui:SetAttribute("Asset" .. name, asset == "" and "Unconfigured" or "Loading")
-	if asset ~= "" then table.insert(requested, asset) end
+	ui.Gui:SetAttribute("Asset" .. name, "Loading")
+	if asset ~= "" then
+		table.insert(requested, asset)
+	else
+		ui:Spawn("asset:" .. name, function()
+			local uri, status = Assets.LoadFromRepository(name)
+			if ui.Destroyed then return end
+			if uri == "" then
+				ui.Gui:SetAttribute("Asset" .. name, status)
+				if status ~= "NeedsRobloxId" then warn("[Faithful] " .. name .. " artwork: " .. status) end
+				return
+			end
+
+			local target
+			if name == "Background" then
+				ui.Background.Image = uri
+				target = ui.Background
+			elseif name == "Logo" then
+				ui.Logo.Image = uri
+				ui.Launcher.Image = uri
+				target = ui.Logo
+			else
+				vfx:SetSmokeImage(uri)
+				target = vfx.Mist[1] and vfx.Mist[1].Node
+			end
+			ui.Gui:SetAttribute("Asset" .. name, target and target.IsLoaded and "Ready" or "Assigned")
+			if target then
+				ui:Connect(target:GetPropertyChangedSignal("IsLoaded"), function()
+					if target.IsLoaded then ui.Gui:SetAttribute("Asset" .. name, "Ready") end
+				end)
+			end
+		end)
+	end
 end
 if #requested > 0 then
 	ui:Spawn("preload", function()

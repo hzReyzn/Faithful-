@@ -8,7 +8,8 @@ Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propi
 - La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda es el logo original con transparencia.
 - Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Las páginas contienen su título y espacio limpio; no hay Movement, Player, Protection, Utilities ni funciones de juego.
 - El título de cabecera se oculta cuando carga el fondo que ya contiene FAITHFUL. En pantallas estrechas se priorizan logo, reloj y botones.
-- El fondo pasa de la transparencia 0.83 del código de referencia a **0.78**, una reducción de cinco puntos porcentuales. En Roblox, menor `ImageTransparency` significa mayor opacidad; no es una reducción de brillo ni una edición del PNG.
+- La ventana predeterminada pasa a **940 × 528** (aproximadamente 16:9), manteniendo adaptación a pantallas pequeñas.
+- El fondo usa **0.38** de `ImageTransparency` (62% opacidad) para que la ilustración resulte visible, sin modificar los píxeles del PNG.
 - Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar y continúa al reabrir. Una sesión nueva comienza en cero.
 - Se arrastra la ventana desde la cabecera con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo un tramo de cabecera recuperable. El logo puede arrastrarse por separado a cualquier punto visible; tras moverlo deja de seguir a la ventana. El pequeño botón de reapertura también es arrastrable.
 - Cerrar solicita confirmación y oculta la interfaz. El logo de reapertura permite volver. Destruir el `ScreenGui` retira por completo sus recursos.
@@ -18,7 +19,7 @@ Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propi
 | Archivo | Responsabilidad |
 | --- | --- |
 | `src/FaithfulTheme.luau` | Paleta, medidas, transparencias, tiempos y calidad predeterminada |
-| `src/FaithfulAssets.luau` | Tres IDs configurables y validación de formato |
+| `src/FaithfulAssets.luau` | Tres IDs configurables y cargador PNG local opcional para ejecutores compatibles |
 | `src/FaithfulUI.luau` | Construcción nativa, componentes, entrada, reloj y estado local |
 | `src/FaithfulVFX.luau` | Niebla, partículas, borde, pulsos, transiciones y limpieza de animaciones |
 | `src/FaithfulMain.client.luau` | Inicialización, instancia única y precarga no bloqueante |
@@ -33,7 +34,7 @@ Las versiones modular y autocontenida usan la misma implementación. Se instala 
 
 ## 1. Configurar las imágenes
 
-No se han publicado imágenes en tu cuenta de Roblox ni se han inventado IDs. Antes de evaluar el acabado visual:
+No se han publicado imágenes en tu cuenta de Roblox ni se han inventado IDs. **En Roblox Studio**, antes de evaluar el acabado visual:
 
 1. Abre tu experiencia en Roblox Studio y su Asset Manager.
 2. Importa `assets/FaithfulBackground.png`, `assets/FaithfulLogo.png` y `assets/CrimsonMist.png` como imágenes bajo el propietario o grupo de la experiencia. Conserva el canal alfa del logo y de la niebla.
@@ -53,17 +54,19 @@ Acepta el ID numérico escrito como cadena o `rbxassetid://` seguido de ese ID r
 
 `LayoutReference.png` no se carga en el juego: sus opciones están incrustadas en la imagen. El sprite `CrimsonMist.png` es el único arte nuevo; se tiñe y anima en `FaithfulVFX`, detrás de los controles. No añade personajes ni símbolos al diseño.
 
-Sin IDs válidos la interfaz sigue funcionando, con fondo oscuro y un sigilo nativo de respaldo. **La niebla texturizada y el arte original no se verán hasta configurar y cargar sus imágenes.** El estado de precarga se expone en los atributos `AssetBackground`, `AssetLogo` y `AssetSmoke` del `ScreenGui`.
+**Alternativa para el `loadstring` en un ejecutor compatible:** si los IDs siguen sin configurar, `FaithfulAssets.LoadFromRepository()` descarga los PNG del commit fijo `dff138c...` de este repositorio, comprueba firma/tamaño y los registra mediante `getcustomasset` o `getsynasset` y `writefile`. Se reutiliza una caché local validada cuando existen `isfile` y `readfile`. Esto replica el principio del cargador visual de Reyzn X, sin descargar ni ejecutar scripts Lua externos. En ejecutores sin esas APIs, las imágenes necesitan IDs reales como en Studio.
+
+Sin imágenes disponibles la interfaz sigue funcionando, con fondo oscuro y un sigilo nativo de respaldo. El estado de los recursos se expone en `AssetBackground`, `AssetLogo` y `AssetSmoke` del `ScreenGui` (`Ready`, `Assigned`, `NeedsRobloxId` o un error de carga).
 
 ## 2. Instalación rápida: un LocalScript
 
 1. En Explorer, abre `StarterPlayer > StarterPlayerScripts`.
 2. Crea un **LocalScript** llamado `Faithful`.
 3. Copia dentro todo `Faithful-Standalone.client.luau`, o todo el archivo `Faithful Exploit` del paquete.
-4. Configura los IDs en el bloque `FaithfulAssets` de ese mismo script.
+4. En Studio, configura los IDs en el bloque `FaithfulAssets` de ese mismo script. En un ejecutor compatible el cargador de imágenes podrá funcionar sin ese paso.
 5. Inicia **Play**, no una ejecución aislada del servidor. El script necesita `Players.LocalPlayer` y crea su `ScreenGui` en `PlayerGui`.
 
-No requiere módulos externos, HTTP habilitado, `loadstring`, APIs de ejecutores ni cambios de servidor.
+La versión de Studio no requiere HTTP, `loadstring`, APIs de ejecutores ni cambios de servidor. El cargador opcional de imágenes solo se activa en entornos que ofrecen funciones de recursos locales y permite que el `loadstring` use los PNG de GitHub.
 
 ## 3. Instalación modular
 

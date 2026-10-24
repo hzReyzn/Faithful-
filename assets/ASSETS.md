@@ -7,7 +7,9 @@
 | LayoutReference.png | Tercera imagen adjunta; copia de bytes intacta | Referencia de composición, no se carga en Roblox |
 | CrimsonMist.png | Sprite nuevo generado con Imagegen integrado, fondo transparente | Textura compartida de las doce capas de niebla Ultra |
 
-Los PNG no contienen IDs de Roblox. Configura los tres recursos utilizados en `FaithfulAssets.luau` tras importarlos a tu experiencia.
+Los PNG no contienen IDs de Roblox. Para Roblox Studio, impórtalos a la experiencia y configura los tres IDs en `FaithfulAssets.luau`.
+
+En un ejecutor que admita `getcustomasset` (o `getsynasset`) y `writefile`, el script autocontenido intenta cargar automáticamente **solo estos tres PNG**, desde una revisión fija de GitHub. Comprueba su firma PNG y tamaño antes de escribirlos en caché. Si el ejecutor no ofrece esas APIs, seguirá necesitando los IDs de Roblox. No se descarga ni ejecuta código Lua adicional.
 
 ## Prompt utilizado para el sprite
 

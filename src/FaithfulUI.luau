@@ -262,7 +262,7 @@ function UI:_Layout()
 	self.Sidebar.Size = UDim2.new(0, sidebar, 1, -layout.Header)
 	self.Content.Position = UDim2.fromOffset(sidebar + 20, layout.Header + 14)
 	self.Content.Size = UDim2.new(1, -sidebar - 38, 1, -layout.Header - 30)
-	self.PageTitle.TextSize = compact and 30 or 38
+	self.PageTitle.TextSize = compact and 28 or 34
 	self.Brand.Visible = w >= 520 and not (self.Background.Image ~= "" and self.Assets.BackgroundContainsTitle and self.Background.IsLoaded)
 	for _, record in pairs(self.Navigation) do
 		record.Label.Position = UDim2.fromOffset(compact and 36 or 52, 0)

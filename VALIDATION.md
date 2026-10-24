@@ -1,5 +1,13 @@
 # Verificación de Faithful — 24 de octubre de 2026
 
+## Actualización: ventana compacta y arte automático
+
+- La ventana ahora mide **940 × 528** en su tamaño base. Se redujeron también la cabecera, la barra lateral y el logo, conservando la lógica de ajuste a pantallas pequeñas.
+- El PNG de fondo se presenta con `ImageTransparency = 0.38` para recuperar visibilidad; logo y fondo no se modificaron.
+- Con IDs de imagen válidos se mantiene la ruta nativa de Roblox. Sin IDs, ejecutores compatibles pueden descargar **solo** los tres PNG del commit fijo `dff138c05914f15c3c84bca1caef13a11969814b`, validarlos y registrarlos con `getcustomasset`/`getsynasset`. Studio sigue requiriendo los IDs publicados en Roblox.
+- `npm test` completó **63 aserciones** en el entorno simulado, incluida la carga y reutilización de PNG, aplicación de fondo, logo, botón de reapertura y niebla; compiló los módulos y comprobó que el bundle `Faithful Exploit` coincide con su fuente.
+- Todavía **no** se ha probado visualmente en Roblox ni en un ejecutor real. El apartado histórico siguiente corresponde a la entrega inicial (53 aserciones, sin descarga opcional de imágenes); su hash no describe esta actualización.
+
 ## Ejecutado realmente
 
 - Se leyeron las tres imágenes adjuntas y el código completo disponible de Reyzn X. Se revisaron en detalle sus capas de fuego, reutilización de objetos y ciclo de actualización.
