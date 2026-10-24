@@ -131,7 +131,7 @@ function UI:Label(parent, text, position, size, textSize, color)
 	return self:Make("TextLabel", parent, {
 		Text = text, Position = position, Size = size, TextSize = textSize or 14,
 		TextColor3 = color or self.Theme.Colors.Bone, TextXAlignment = Enum.TextXAlignment.Left,
-		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = parent.ZIndex + 3,
 	})
 end
 function UI:Line(parent, a, b, color, transparency, thickness)
@@ -144,7 +144,7 @@ function UI:Line(parent, a, b, color, transparency, thickness)
 	})
 end
 function UI:Icon(parent, name, position, size, color)
-	local host = self:Make("Frame", parent, { Name = name .. "Icon", Position = position, Size = UDim2.fromOffset(size, size) })
+	local host = self:Make("Frame", parent, { Name = name .. "Icon", Position = position, Size = UDim2.fromOffset(size, size), ZIndex = parent.ZIndex + 3 })
 	for _, path in ipairs(PATHS[name]) do
 		for i = 1, #path - 2, 2 do
 			self:Line(host, Vector2.new(path[i], path[i + 1]) * (size / 24),
@@ -154,18 +154,87 @@ function UI:Icon(parent, name, position, size, color)
 	return host
 end
 
+function UI:Gradient(parent, colors, rotation, transparency)
+	local keys = {}
+	for i, color in ipairs(colors) do table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#colors - 1), color)) end
+	local gradient = self:Make("UIGradient", parent, { Color = ColorSequence.new(keys), Rotation = rotation or 0 })
+	if transparency then gradient.Transparency = transparency end
+	return gradient
+end
+
+-- Native layered button surface, based on Reyzn X's metal face / neon wash /
+-- single reflection pattern. Its animation state is owned by FaithfulVFX.
 function UI:Hover(button, selected)
-	local normalAlpha = self.AlphaLookup[button].BackgroundTransparency.Base
-	self:Connect(button.MouseEnter, function()
-		if not self.Modal.Visible then
-			self:Alpha(button, "BackgroundTransparency", math.min(normalAlpha, 0.86))
-			self:Animate(button, { BackgroundColor3 = self.Theme.Colors.Charcoal })
+	if self.ButtonLookup[button] then return self.ButtonLookup[button] end
+	local c = self.Theme.Colors
+	self:Alpha(button, "BackgroundTransparency", 1)
+	local face = self:Make("Frame", button, { Name = "MetalFace", AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -2, 1, -2),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.06, ZIndex = button.ZIndex })
+	self:Corner(face, 5)
+	self:Gradient(face, { c.Charcoal, c.Obsidian, c.MetalDark }, 105)
+	local edge = self:Stroke(face, Color3.new(1, 1, 1), 0.56)
+	local edgeGradient = self:Gradient(edge, { c.MetalDark, c.SteelLight, c.Silver, c.Crimson, c.MetalDark }, 32)
+	local glow = self:Make("Frame", face, { Name = "CrimsonWash", Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = button.ZIndex + 1 })
+	self:Corner(glow, 4)
+	local wash = self:Gradient(glow, { c.BrightCrimson, c.CrimsonShade, c.Crimson }, 22)
+	local sheen = self:Make("Frame", face, { Name = "Reflection", Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2),
+		BackgroundColor3 = c.Bone, BackgroundTransparency = 1, ZIndex = button.ZIndex + 1 })
+	self:Corner(sheen, 4)
+	local sweep = self:Gradient(sheen, { c.Silver, c.Bone }, 24, NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.38, 1),
+		NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(0.62, 1), NumberSequenceKeypoint.new(1, 1),
+	}))
+	local lip = self:Make("Frame", face, { Name = "BeveledLip", Position = UDim2.fromOffset(9, 1), Size = UDim2.new(1, -18, 0, 1),
+		BackgroundColor3 = c.Silver, BackgroundTransparency = 0.82, ZIndex = button.ZIndex + 1 })
+	self:Gradient(lip, { c.MetalDark, c.Silver, c.MetalDark }, 0)
+	local caption
+	if button.Text ~= "" then
+		caption = self:Label(button, button.Text, UDim2.fromOffset(5, 0), UDim2.new(1, -10, 1, 0), button.TextSize)
+		caption.TextXAlignment = Enum.TextXAlignment.Center
+		caption.Font = button.Font
+		self:Alpha(button, "TextTransparency", 1)
+		self:Connect(button:GetPropertyChangedSignal("Text"), function() caption.Text = button.Text end)
+	end
+	local record = { Button = button, Face = face, Edge = edge, EdgeGradient = edgeGradient, Glow = glow,
+		Wash = wash, Sheen = sheen, Sweep = sweep, Lip = lip, Caption = caption, IsSelected = selected,
+		Scale = self:Make("UIScale", face, { Scale = 1 }),
+		Energy = self:Make("NumberValue", button, { Name = "InteractionEnergy", Value = 0 }),
+		Selection = self:Make("NumberValue", button, { Name = "SelectionEnergy", Value = 0 }),
+		Hover = false, Pressed = nil, Seed = (#self.ButtonStyles + 1) * 1.37 }
+	table.insert(self.ButtonStyles, record)
+	self.ButtonLookup[button] = record
+	local function allowed()
+		return self.Open and self.Gui.Enabled and (not self.Modal or not self.Modal.Visible or button:IsDescendantOf(self.Modal))
+	end
+	local function hover(active)
+		record.Hover = active and allowed()
+		if self.VFX then self.VFX:InteractButton(record, record.Hover and "hover" or "leave") end
+	end
+	self:Connect(button.MouseEnter, function() hover(true) end)
+	self:Connect(button.MouseLeave, function() hover(false) end)
+	self:Connect(button.SelectionGained, function() hover(true) end)
+	self:Connect(button.SelectionLost, function() hover(false) end)
+	self:Connect(button.InputBegan, function(input)
+		if not allowed() or not isPointer(input) or record.Pressed then return end
+		record.Pressed = input
+		if self.VFX then self.VFX:InteractButton(record, "press") end
+	end)
+	if self.VFX then self.VFX:BindButton(record) end
+	return record
+end
+
+function UI:ReleaseButtons(input, force)
+	for _, record in ipairs(self.ButtonStyles) do
+		local pointer = record.Pressed
+		if (force and (pointer or record.Hover or record.Energy.Value > 0)) or (pointer and (input == pointer or (pointer.UserInputType == Enum.UserInputType.MouseButton1
+			and input and input.UserInputType == Enum.UserInputType.MouseButton1))) then
+			record.Pressed = nil
+			if force then record.Hover = false end
+			if self.VFX then self.VFX:InteractButton(record, "release") end
 		end
-	end)
-	self:Connect(button.MouseLeave, function()
-		self:Alpha(button, "BackgroundTransparency", (selected and selected()) and 0.77 or normalAlpha)
-		self:Animate(button, { BackgroundColor3 = (selected and selected()) and self.Theme.Colors.Crimson or self.Theme.Colors.Obsidian })
-	end)
+	end
 end
 
 function UI:Tooltip(owner, message)
@@ -197,9 +266,11 @@ end
 function UI:_ClampPosition(target, position, mode)
 	local viewport, size = self.Root.AbsoluteSize, target.AbsoluteSize
 	if mode == "window" then
-		-- Allow placement partly outside every horizontal edge, retaining a usable header.
-		return Vector2.new(math.clamp(position.X, -size.X + 96, math.max(0, viewport.X - 96)),
-			math.clamp(position.Y, 0, math.max(0, viewport.Y - 48)))
+		-- Leave enough width for the page-title drag area, even with the wordmark
+		-- over the header. This keeps a partially offscreen window recoverable.
+		local retained = math.min(224, size.X, viewport.X)
+		return Vector2.new(math.clamp(position.X, -size.X + retained, math.max(0, viewport.X - retained)),
+			math.clamp(position.Y, 0, math.max(0, viewport.Y - math.min(size.Y, self.Theme.Layout.Header + 56))))
 	end
 	return Vector2.new(math.clamp(position.X, 0, math.max(0, viewport.X - size.X)),
 		math.clamp(position.Y, 0, math.max(0, viewport.Y - size.Y)))
@@ -242,20 +313,20 @@ end
 
 function UI:_PlaceLogo()
 	if self.LogoDetached then return end
-	local position = Vector2.new(self.Window.Position.X.Offset + 12, self.Window.Position.Y.Offset + 8)
+	local position = Vector2.new(self.Window.Position.X.Offset + 16, self.Window.Position.Y.Offset + 6)
 	position = self:_ClampPosition(self.Logo, position, "logo")
 	self.Logo.Position = UDim2.fromOffset(position.X, position.Y)
 end
 
-function UI:_Layout()
+function UI:_Layout(preservePointer)
 	if self.Destroyed then return end
-	self:_EndPointer()
+	if not preservePointer then self:_EndPointer() end
 	self.TooltipBox.Visible = false
 	local available = self.Root.AbsoluteSize
 	if available.X < 100 or available.Y < 100 then return end
 	local layout = self.Theme.Layout
-	local w = math.min(layout.Width, available.X - layout.Margin * 2)
-	local h = math.min(layout.Height, available.Y - layout.Margin * 2)
+	local w = math.min(layout.Width * self.WindowSize, available.X - layout.Margin * 2)
+	local h = math.min(layout.Height * self.WindowSize, available.Y - layout.Margin * 2, available.Y * layout.MaxViewportHeight)
 	local compact = w < layout.CompactAt
 	local sidebar = compact and layout.CompactSidebar or layout.Sidebar
 	self.Window.Size = UDim2.fromOffset(w, h)
@@ -263,13 +334,14 @@ function UI:_Layout()
 	self.Logo.Size = UDim2.fromOffset(w < 520 and 108 or layout.WordmarkWidth,
 		w < 520 and 36 or layout.WordmarkHeight)
 	self.Sidebar.Size = UDim2.new(0, sidebar, 1, -layout.Header)
-	self.Content.Position = UDim2.fromOffset(sidebar + 20, layout.Header + 14)
-	self.Content.Size = UDim2.new(1, -sidebar - 38, 1, -layout.Header - 30)
-	self.PageTitle.TextSize = compact and 28 or 34
+	self.Content.Position = UDim2.fromOffset(sidebar + 18, layout.Header + 12)
+	self.Content.Size = UDim2.new(1, -sidebar - 34, 1, -layout.Header - 26)
+	self.PageTitle.TextSize = compact and 26 or 30
+	self.QualityBadge.Visible = w >= 540
 	for _, record in pairs(self.Navigation) do
 		record.Label.Position = UDim2.fromOffset(compact and 36 or 52, 0)
 		record.Label.Size = UDim2.new(1, compact and -38 or -58, 1, 0)
-		record.Label.TextSize = compact and 12 or 15
+		record.Label.TextSize = compact and 12 or 14
 		record.Icon.Position = UDim2.new(0, compact and 8 or 18, 0.5, -11)
 	end
 	if not self.Positioned then
@@ -292,7 +364,7 @@ function UI:_ClockText()
 	self.Timer.Text = string.format("%02d:%02d:%02d", math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60)
 end
 function UI:_StartClock()
-	if self.ClockStart then return end
+	if self.ClockStart or not self.Open or not self.Gui.Enabled then return end
 	self.ClockStart = os.clock()
 	local function tick()
 		if not self.Open then return end
@@ -311,6 +383,7 @@ function UI:SetOpen(open)
 	if self.Destroyed or self.Open == open then return end
 	self.Open = open
 	self:_EndPointer()
+	self:ReleaseButtons(nil, true)
 	self.TooltipBox.Visible = false
 	for owner in pairs(self.TooltipOwners) do self:CancelDelay(owner) end
 	if not open then
@@ -327,16 +400,16 @@ function UI:SetOpen(open)
 end
 
 function UI:SelectCategory(name)
-	if not self.Pages[name] then return end
+	if self.Destroyed or not self.Pages[name] then return end
 	self.ActivePage = name
 	self:CloseDropdown()
 	self.TooltipBox.Visible = false
 	for key, record in pairs(self.Navigation) do
 		record.Selected = key == name
 		record.Marker.Visible = record.Selected
-		self:Alpha(record.Button, "BackgroundTransparency", record.Selected and 0.77 or 1)
-		self:Alpha(record.Edge, "Transparency", record.Selected and 0.46 or 1)
-		self:Animate(record.Button, { BackgroundColor3 = record.Selected and self.Theme.Colors.Crimson or self.Theme.Colors.Obsidian })
+		local style = self.ButtonLookup[record.Button]
+		if self.VFX then self.VFX:SetButtonSelected(style)
+		else self:Alpha(style.Glow, "BackgroundTransparency", record.Selected and 0.76 or 1) end
 		record.Label.TextColor3 = record.Selected and self.Theme.Colors.Bone or self.Theme.Colors.Silver
 	end
 	if self.VFX then self.VFX:SwitchPage(name)
@@ -393,9 +466,10 @@ end
 function UI:Row(parent, height)
 	self.Order += 1
 	local row = self:Make("Frame", parent, { Size = UDim2.new(1, -6, 0, height), LayoutOrder = self.Order,
-		BackgroundColor3 = self.Theme.Colors.Obsidian, BackgroundTransparency = 0.18 })
-	self:Corner(row)
-	self:Stroke(row, nil, 0.64)
+		BackgroundColor3 = self.Theme.Colors.Obsidian, BackgroundTransparency = 0.08 })
+	self:Corner(row, 6)
+	local edge = self:Stroke(row, Color3.new(1, 1, 1), 0.6)
+	self:Gradient(edge, { self.Theme.Colors.MetalDark, self.Theme.Colors.SteelLight, self.Theme.Colors.MetalDark }, 25)
 	return row
 end
 
@@ -411,7 +485,9 @@ end
 
 function UI:Toggle(parent, caption, initial, callback)
 	local row = self:Row(parent, 56)
-	self:Label(row, caption, UDim2.fromOffset(14, 0), UDim2.new(1, -88, 1, 0))
+	local title = self:Label(row, caption, UDim2.fromOffset(14, 0), UDim2.new(1, -88, 1, 0), 13)
+	title.TextWrapped = true
+	title.TextTruncate = Enum.TextTruncate.None
 	local button = self:Make("TextButton", row, { Position = UDim2.new(1, -70, 0, 6), Size = UDim2.fromOffset(60, 44), AutoButtonColor = false })
 	local track = self:Make("Frame", button, { Position = UDim2.fromOffset(6, 9), Size = UDim2.fromOffset(48, 26), BackgroundTransparency = 0 })
 	self:Corner(track, 13)
@@ -477,12 +553,13 @@ end
 
 function UI:Dropdown(parent, caption, options, initial, callback)
 	assert(#options > 0, "Dropdown needs options")
-	local row = self:Row(parent, 86)
+	local row = self:Row(parent, 90)
 	self:Label(row, caption, UDim2.fromOffset(14, 5), UDim2.new(1, -28, 0, 26))
-	local button = self:Make("TextButton", row, { Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 40),
+	local button = self:Make("TextButton", row, { Text = tostring(initial or options[1]), Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 44),
 		AutoButtonColor = false, BackgroundColor3 = self.Theme.Colors.Charcoal, BackgroundTransparency = 0.1 })
 	self:Corner(button, 4)
-	local list = self:Make("Frame", row, { Position = UDim2.fromOffset(12, 80), Size = UDim2.new(1, -24, 0, #options * 40), Visible = false })
+	self:Hover(button)
+	local list = self:Make("Frame", row, { Position = UDim2.fromOffset(12, 84), Size = UDim2.new(1, -24, 0, #options * 44), Visible = false })
 	self:Make("UIListLayout", list, { SortOrder = Enum.SortOrder.LayoutOrder })
 	local owner = self
 	local control = { Root = row, Button = button, Value = initial, IsOpen = false, Items = {} }
@@ -491,7 +568,7 @@ function UI:Dropdown(parent, caption, options, initial, callback)
 		elseif owner.OpenDropdown == self then owner.OpenDropdown = nil end
 		self.IsOpen = open
 		list.Visible = open
-		row.Size = UDim2.new(1, -6, 0, open and (88 + #options * 40) or 86)
+		row.Size = UDim2.new(1, -6, 0, open and (92 + #options * 44) or 90)
 		button.Text = tostring(self.Value) .. (open and "  −" or "  +")
 	end
 	function control:Set(value, silent)
@@ -501,7 +578,7 @@ function UI:Dropdown(parent, caption, options, initial, callback)
 		if not silent and callback then callback(value) end
 	end
 	for i, option in ipairs(options) do
-		local item = self:Make("TextButton", list, { Text = option, LayoutOrder = i, Size = UDim2.new(1, 0, 0, 40), AutoButtonColor = false,
+		local item = self:Make("TextButton", list, { Text = option, LayoutOrder = i, Size = UDim2.new(1, 0, 0, 44), AutoButtonColor = false,
 			BackgroundColor3 = self.Theme.Colors.Obsidian, BackgroundTransparency = 0.1 })
 		table.insert(control.Items, item)
 		self:Hover(item)
@@ -513,10 +590,10 @@ function UI:Dropdown(parent, caption, options, initial, callback)
 end
 
 function UI:TextField(parent, caption, placeholder, callback)
-	local row = self:Row(parent, 86)
+	local row = self:Row(parent, 90)
 	self:Label(row, caption, UDim2.fromOffset(14, 5), UDim2.new(1, -28, 0, 26))
 	local box = self:Make("TextBox", row, { PlaceholderText = placeholder, ClearTextOnFocus = false,
-		Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 40), TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 44), TextXAlignment = Enum.TextXAlignment.Left,
 		BackgroundColor3 = self.Theme.Colors.Charcoal, BackgroundTransparency = 0.1, MultiLine = false })
 	self:Corner(box, 4)
 	self:Make("UIPadding", box, { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
@@ -535,7 +612,7 @@ function UI:Separator(parent)
 end
 
 function UI:_BuildShowcase()
-	local main, settings = self.Pages.Main, self.Pages.Settings
+	local main = self.Pages.Main
 	local demo = self:Button(main, "Probar notificación", function() self:Notify("Interfaz lista.") end)
 	self:Tooltip(demo.Button, "Notificación local de la interfaz")
 	self:Toggle(main, "Estado visual", false, function() end)
@@ -544,9 +621,44 @@ function UI:_BuildShowcase()
 	self:TextField(main, "Texto", "Escribir…", function() end)
 	self:Separator(main)
 	self:Button(main, "Probar confirmación", function() self:Confirm("¿Confirmar esta prueba?", function() self:Notify("Confirmado.") end) end)
-	self:Dropdown(settings, "VFX", { "Minimal", "Balanced", "Ultra" }, self.Theme.Quality, function(value) self.VFX:SetQuality(value) end)
-	self:Toggle(settings, "Reducir movimiento", self.Theme.ReduceMotion, function(value) self.VFX:SetReducedMotion(value) end)
-	self:Slider(settings, "Niebla", 0, 0.4, 0.01, self.Theme.MistIntensity, function(value) self.VFX:SetMistIntensity(value) end)
+end
+
+function UI:SetWindowSize(scale)
+	self.WindowSize = math.clamp(scale, 0.78, 1)
+	self:_Layout(true)
+end
+
+function UI:ResetLayout()
+	self.WindowSize = 1
+	self.LogoDetached = false
+	self.Positioned = false
+	self:_Layout()
+	if self.Appearance.Size then self.Appearance.Size:Set(100, true) end
+end
+
+function UI:_BuildAppearance()
+	local controls = self.Appearance
+	controls.Quality = self:Dropdown(self.Pages.Visuals, "Calidad", { "Minimal", "Balanced", "Ultra" }, self.Theme.Quality,
+		function(value) self.VFX:SetQuality(value) end)
+	controls.Mist = self:Toggle(self.Pages.Visuals, "Crimson Mist", self.Theme.Effects.Mist,
+		function(value) self.VFX:SetEffect("Mist", value) end)
+	controls.Intensity = self:Slider(self.Pages.Visuals, "Niebla", 0, 100, 1, self.Theme.MistIntensity * 100,
+		function(value) self.VFX:SetMistIntensity(value / 100) end)
+	controls.Embers = self:Toggle(self.Pages.Visuals, "Partículas", self.Theme.Effects.Embers,
+		function(value) self.VFX:SetEffect("Embers", value) end)
+	controls.Border = self:Toggle(self.Pages.Visuals, "Bordes animados", self.Theme.Effects.Border,
+		function(value) self.VFX:SetEffect("Border", value) end)
+	controls.Background = self:Slider(self.Pages.Visuals, "Fondo", 15, 80, 1,
+		(1 - self.Theme.BackgroundReferenceTransparency + self.Theme.BackgroundTransparencyReduction) * 100,
+		function(value) self:Alpha(self.Background, "ImageTransparency", 1 - value / 100) end)
+	controls.ReduceMotion = self:Toggle(self.Pages.Settings, "Reducir movimiento", self.Theme.ReduceMotion,
+		function(value) self.VFX:SetReducedMotion(value) end)
+	controls.Size = self:Slider(self.Pages.Settings, "Tamaño", 78, 100, 1, 100,
+		function(value) self:SetWindowSize(value / 100) end)
+	local reset = self:Button(self.Pages.Settings, "Restablecer", function() self:ResetLayout() end)
+	self:Tooltip(reset.Button, "Restablecer posición y tamaño de Faithful")
+	self:Tooltip(controls.Mist.Button, "Niebla carmesí alrededor de Faithful")
+	self:Tooltip(controls.ReduceMotion.Button, "También respeta la accesibilidad de Roblox")
 end
 
 function UI:_Build()
@@ -556,68 +668,106 @@ function UI:_Build()
 		ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets })
 	self.Gui:SetAttribute("FaithfulOwner", self.Theme.Owner)
 	self.Gui:SetAttribute("Version", self.Theme.Version)
+	self.Gui:SetAttribute("Build", self.Theme.Build)
 	self.Root = self:Make("Frame", self.Gui, { Name = "SafeRoot", Size = UDim2.fromScale(1, 1) })
 	self.Window = self:Make("Frame", self.Root, { Name = "Window", Size = UDim2.fromOffset(layout.Width, layout.Height),
-		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.035, Visible = false, ClipsDescendants = true }, "shell")
-	self:Corner(self.Window)
-	self.WindowEdge = self:Stroke(self.Window, colors.Silver, 0.62)
-	self.Background = self:Make("ImageLabel", self.Window, { Name = "Background", Size = UDim2.fromScale(1, 1),
+		Visible = false, ClipsDescendants = false }, "shell")
+	-- A transparent scene root lets smoke escape the rim. Only the artwork and
+	-- controls are clipped by Surface, keeping the atmospheric layers behind them.
+	for i = 3, 1, -1 do
+		local pad = i * 5
+		local shadow = self:Make("Frame", self.Window, { Name = "SoftShadow" .. i,
+			Position = UDim2.fromOffset(-pad, -pad + 3), Size = UDim2.new(1, pad * 2, 1, pad * 2),
+			BackgroundColor3 = Color3.new(), BackgroundTransparency = 0.92 - (3 - i) * 0.03, ZIndex = 1 })
+		self:Corner(shadow, layout.Radius + pad)
+	end
+	self.MistLayer = self:Make("Frame", self.Window, { Name = "CrimsonMist", Size = UDim2.fromScale(1, 1), ZIndex = 3 })
+	self.EmberLayer = self:Make("Frame", self.Window, { Name = "GhoulEmbers", Size = UDim2.fromScale(1, 1), ZIndex = 4 })
+	self.Surface = self:Make("Frame", self.Window, { Name = "ObsidianSurface", Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.025, ClipsDescendants = true, ZIndex = 5 })
+	self:Corner(self.Surface)
+	self.WindowEdge = self:Stroke(self.Surface, Color3.new(1, 1, 1), 0.2)
+	self.WindowMetal = self:Gradient(self.WindowEdge, { colors.MetalDark, colors.Silver, colors.Metal, colors.Crimson, colors.SteelLight }, 28)
+	self.Background = self:Make("ImageLabel", self.Surface, { Name = "Background", Size = UDim2.fromScale(1, 1),
 		Image = self.Assets.Resolve(self.Assets.Background), ScaleType = Enum.ScaleType.Fit,
-		ImageTransparency = math.clamp(self.Theme.BackgroundReferenceTransparency - self.Theme.BackgroundTransparencyReduction, 0, 1), ZIndex = 2 })
-	self.MistLayer = self:Make("Frame", self.Window, { Name = "CrimsonMist", Size = UDim2.fromScale(1, 1), ZIndex = 3, ClipsDescendants = true })
-	self.EmberLayer = self:Make("Frame", self.Window, { Name = "GhoulEmbers", Size = UDim2.fromScale(1, 1), ZIndex = 4, ClipsDescendants = true })
-	local inset = self:Make("Frame", self.Window, { Position = UDim2.fromOffset(5, 5), Size = UDim2.new(1, -10, 1, -10), ZIndex = 5 })
-	self:Corner(inset, 4); self:Stroke(inset, colors.Metal, 0.72)
-	self.Header = self:Make("Frame", self.Window, { Name = "Header", Size = UDim2.new(1, 0, 0, layout.Header), ZIndex = 10,
-		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.38 })
+		ImageTransparency = math.clamp(self.Theme.BackgroundReferenceTransparency - self.Theme.BackgroundTransparencyReduction, 0, 1), ZIndex = 6 })
+	-- Fade the baked-in title out of the top band; preserve the original PNG bytes.
+	self:Make("UIGradient", self.Background, { Rotation = 90, Enabled = self.Assets.BackgroundContainsTitle, Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.27, 1), NumberSequenceKeypoint.new(0.44, 0.1),
+		NumberSequenceKeypoint.new(0.72, 0.04), NumberSequenceKeypoint.new(1, 0.32),
+	}) })
+	self.InnerMistLayer = self:Make("Frame", self.Surface, { Name = "InteriorMist", Size = UDim2.fromScale(1, 1), ZIndex = 7 })
+	local inset = self:Make("Frame", self.Surface, { Name = "InsetRim", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), ZIndex = 9 })
+	self:Corner(inset, 5)
+	self:Gradient(self:Stroke(inset, Color3.new(1, 1, 1), 0.65), { colors.Metal, colors.Silver, colors.MetalDark }, 120)
+	self.CornerDetails = {}
+	for i, corner in ipairs({ { 0, 0, 1, 1 }, { 1, 0, -1, 1 }, { 1, 1, -1, -1 }, { 0, 1, 1, -1 } }) do
+		local host = self:Make("Frame", self.Window, { Name = "CornerBevel" .. i,
+			Position = UDim2.fromScale(corner[1], corner[2]), Size = UDim2.fromOffset(0, 0), ZIndex = 51 })
+		local x, y = corner[3], corner[4]
+		self:Line(host, Vector2.new(x * 6, y * 19), Vector2.new(x * 6, y * 10), colors.Silver, 0.45, 1)
+		self:Line(host, Vector2.new(x * 6, y * 10), Vector2.new(x * 10, y * 6), colors.Silver, 0.4, 1)
+		self:Line(host, Vector2.new(x * 10, y * 6), Vector2.new(x * 29, y * 6), colors.Silver, 0.45, 1)
+		table.insert(self.CornerDetails, host)
+	end
+	self.Header = self:Make("Frame", self.Surface, { Name = "Header", Size = UDim2.new(1, 0, 0, layout.Header), ZIndex = 10,
+		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.035 })
 	self.DragHandle = self:Make("TextButton", self.Header, { Name = "DragHandle", Size = UDim2.new(1, -188, 1, 0), AutoButtonColor = false, Selectable = false })
-	self.Timer = self:Label(self.Header, "00:00:00", UDim2.new(1, -194, 0, 0), UDim2.fromOffset(92, layout.Header), 13, colors.Silver)
+	self.Timer = self:Label(self.Header, "00:00:00", UDim2.new(1, -194, 0, 0), UDim2.fromOffset(92, layout.Header), 12, colors.Silver)
 	self.Timer.TextXAlignment = Enum.TextXAlignment.Center
 	local function headerButton(name, offset)
-		local button = self:Make("TextButton", self.Header, { Name = name, Position = UDim2.new(1, offset, 0, 10),
-			Size = UDim2.fromOffset(44, 44), AutoButtonColor = false, ZIndex = 14, BackgroundColor3 = colors.Obsidian })
+		local button = self:Make("TextButton", self.Header, { Name = name, Position = UDim2.new(1, offset, 0, 6),
+			Size = UDim2.fromOffset(44, 44), AutoButtonColor = false, ZIndex = 14 })
 		self:Icon(button, name, UDim2.fromOffset(10, 10), 24)
 		self:Hover(button)
 		return button
 	end
 	self.Minimize = headerButton("Minimize", -98)
 	self.Close = headerButton("Close", -52)
-	self:Make("Frame", self.Header, { Position = UDim2.new(0, 8, 1, -1), Size = UDim2.new(1, -16, 0, 1),
-		BackgroundColor3 = colors.Metal, BackgroundTransparency = 0.44 })
-	self.Sidebar = self:Make("Frame", self.Window, { Position = UDim2.fromOffset(0, layout.Header), Size = UDim2.new(0, layout.Sidebar, 1, -layout.Header),
-		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.27, ZIndex = 10 })
-	self:Make("Frame", self.Sidebar, { Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, -7),
-		BackgroundColor3 = colors.Metal, BackgroundTransparency = 0.5 })
+	self.QualityBadge = self:Make("TextButton", self.Header, { Name = "Quality", Text = string.upper(self.Theme.Quality), TextSize = 10,
+		Position = UDim2.new(1, -272, 0, 6), Size = UDim2.fromOffset(68, 44), AutoButtonColor = false, ZIndex = 14 })
+	self:Hover(self.QualityBadge)
+	self:Connect(self.QualityBadge.Activated, function() if self.Open and not self.Modal.Visible then self:SelectCategory("Visuals") end end)
+	local headerRule = self:Make("Frame", self.Header, { Position = UDim2.new(0, 8, 1, -1), Size = UDim2.new(1, -16, 0, 1),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.3 })
+	self:Gradient(headerRule, { colors.MetalDark, colors.Crimson, colors.SteelLight, colors.MetalDark }, 0)
+	self.Sidebar = self:Make("Frame", self.Surface, { Position = UDim2.fromOffset(0, layout.Header), Size = UDim2.new(0, layout.Sidebar, 1, -layout.Header),
+		BackgroundColor3 = colors.Obsidian, BackgroundTransparency = 0.06, ZIndex = 10 })
+	local divider = self:Make("Frame", self.Sidebar, { Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, -7),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.45 })
+	self:Gradient(divider, { colors.CrimsonShade, colors.SteelLight, colors.MetalDark }, 90)
 	local navigation = self:Make("ScrollingFrame", self.Sidebar, { Name = "Navigation", Position = UDim2.fromOffset(7, 12), Size = UDim2.new(1, -14, 1, -24),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.fromOffset(0, 0), ScrollBarThickness = 2,
 		ScrollBarImageColor3 = colors.Crimson, ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 12 })
-	self:Make("UIListLayout", navigation, { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+	self:Make("UIListLayout", navigation, { Padding = UDim.new(0, layout.NavigationGap), SortOrder = Enum.SortOrder.LayoutOrder })
 	for i, name in ipairs(CATEGORIES) do
-		local button = self:Make("TextButton", navigation, { Name = name, Size = UDim2.new(1, -3, 0, 50), LayoutOrder = i,
-			AutoButtonColor = false, BackgroundColor3 = colors.Obsidian, ZIndex = 13 })
-		self:Corner(button, 5)
-		local edge = self:Stroke(button, colors.Crimson, 1)
-		local marker = self:Make("Frame", button, { Position = UDim2.fromOffset(0, 7), Size = UDim2.new(0, 3, 1, -14),
-			BackgroundColor3 = colors.BrightCrimson, BackgroundTransparency = 0.06, Visible = false })
-		local icon = self:Icon(button, name, UDim2.new(0, 18, 0.5, -11), 22)
-		local label = self:Label(button, name, UDim2.fromOffset(52, 0), UDim2.new(1, -58, 1, 0), 15, colors.Silver)
-		local record = { Button = button, Edge = edge, Marker = marker, Icon = icon, Label = label, Selected = false }
+		local button = self:Make("TextButton", navigation, { Name = name, Size = UDim2.new(1, -3, 0, layout.NavigationHeight), LayoutOrder = i,
+			AutoButtonColor = false, ZIndex = 13 })
+		local marker = self:Make("Frame", button, { Position = UDim2.fromOffset(0, 9), Size = UDim2.new(0, 2, 1, -18),
+			BackgroundColor3 = colors.BrightCrimson, BackgroundTransparency = 0.04, Visible = false, ZIndex = 17 })
+		local icon = self:Icon(button, name, UDim2.new(0, 18, 0.5, -10), 20)
+		local label = self:Label(button, name, UDim2.fromOffset(48, 0), UDim2.new(1, -52, 1, 0), 14, colors.Silver)
+		local record = { Button = button, Marker = marker, Icon = icon, Label = label, Selected = false }
 		self.Navigation[name] = record
-		self:Hover(button, function() return record.Selected end)
+		local style = self:Hover(button, function() return record.Selected end)
+		record.Edge = style.Edge
 		self:Connect(button.Activated, function() if self.Open and not self.Modal.Visible then self:SelectCategory(name) end end)
 	end
-	self.Content = self:Make("Frame", self.Window, { Name = "Content", Position = UDim2.fromOffset(layout.Sidebar + 20, layout.Header + 14),
-		Size = UDim2.new(1, -layout.Sidebar - 38, 1, -layout.Header - 30), ZIndex = 20 })
-	self.PageTitle = self:Label(self.Content, "Home", UDim2.fromOffset(24, 0), UDim2.new(1, -24, 0, 44), 38)
+	self.Content = self:Make("Frame", self.Surface, { Name = "Content", Position = UDim2.fromOffset(layout.Sidebar + 18, layout.Header + 12),
+		Size = UDim2.new(1, -layout.Sidebar - 34, 1, -layout.Header - 26), ZIndex = 20 })
+	self.TitleDragHandle = self:Make("TextButton", self.Content, { Name = "TitleDragHandle", Size = UDim2.new(1, 0, 0, 44),
+		AutoButtonColor = false, Selectable = false })
+	self.PageTitle = self:Label(self.Content, "Home", UDim2.fromOffset(26, 0), UDim2.new(1, -26, 0, 40), 30)
 	self.PageTitle.Font = self.Theme.Fonts.Display
-	self:Icon(self.Content, "Sigil", UDim2.fromOffset(0, 10), 20, colors.Crimson)
-	self:Make("Frame", self.Content, { Position = UDim2.fromOffset(0, 51), Size = UDim2.new(1, 0, 0, 1),
-		BackgroundColor3 = colors.Metal, BackgroundTransparency = 0.65 })
+	self:Icon(self.Content, "Sigil", UDim2.fromOffset(0, 9), 18, colors.Crimson)
+	local titleRule = self:Make("Frame", self.Content, { Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 1),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.56 })
+	self:Gradient(titleRule, { colors.Crimson, colors.SteelLight, colors.Obsidian }, 0)
 	for _, name in ipairs(CATEGORIES) do
-		local page = self:Make("ScrollingFrame", self.Content, { Name = name, Position = UDim2.fromOffset(0, 66),
-			Size = UDim2.new(1, 0, 1, -66), AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.fromOffset(0, 0),
+		local page = self:Make("ScrollingFrame", self.Content, { Name = name, Position = UDim2.fromOffset(0, layout.PageTop),
+			Size = UDim2.new(1, 0, 1, -layout.PageTop), AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.fromOffset(0, 0),
 			ScrollBarThickness = 3, ScrollBarImageColor3 = colors.Crimson, ScrollingDirection = Enum.ScrollingDirection.Y, Visible = name == "Home", ZIndex = 22 }, "page:" .. name)
-		self:Make("UIListLayout", page, { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder })
+		self:Make("UIListLayout", page, { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder })
 		self.Pages[name] = page
 	end
 	self.Logo = self:Make("ImageButton", self.Root, { Name = "DraggableWordmark", Size = UDim2.fromOffset(layout.WordmarkWidth, layout.WordmarkHeight),
@@ -642,16 +792,20 @@ function UI:_Build()
 	self:Corner(dialog); self:Stroke(dialog, colors.Crimson, 0.25)
 	self.ModalText = self:Label(dialog, "", UDim2.fromOffset(18, 18), UDim2.new(1, -36, 0, 62), 16)
 	self.ModalText.TextWrapped = true
-	self.CancelButton = self:Make("TextButton", dialog, { Text = "Cancelar", Position = UDim2.new(0, 16, 1, -58), Size = UDim2.new(0.5, -24, 0, 42),
+	self.CancelButton = self:Make("TextButton", dialog, { Text = "Cancelar", Position = UDim2.new(0, 16, 1, -60), Size = UDim2.new(0.5, -24, 0, 44),
 		AutoButtonColor = false, BackgroundColor3 = colors.Charcoal, BackgroundTransparency = 0, ZIndex = 112 })
-	self.ConfirmButton = self:Make("TextButton", dialog, { Text = "Confirmar", Position = UDim2.new(0.5, 8, 1, -58), Size = UDim2.new(0.5, -24, 0, 42),
+	self.ConfirmButton = self:Make("TextButton", dialog, { Text = "Confirmar", Position = UDim2.new(0.5, 8, 1, -60), Size = UDim2.new(0.5, -24, 0, 44),
 		AutoButtonColor = false, BackgroundColor3 = colors.Crimson, BackgroundTransparency = 0, ZIndex = 112 })
 	self:Corner(self.CancelButton, 4); self:Corner(self.ConfirmButton, 4)
+	self:Hover(self.CancelButton)
+	self:Hover(self.ConfirmButton, function() return true end)
+	if self.Theme.AppearanceControls then self:_BuildAppearance() end
 	if self.Theme.ShowcaseControls then self:_BuildShowcase() end
 end
 
 function UI:_Bind()
 	self:BindDrag(self.DragHandle, self.Window, "window")
+	self:BindDrag(self.TitleDragHandle, self.Window, "window")
 	self:BindDrag(self.Logo, self.Logo, "logo")
 	self:BindDrag(self.Launcher, self.Launcher, "launcher")
 	self:Tooltip(self.Close, "Cerrar")
@@ -679,6 +833,7 @@ function UI:_Bind()
 		end
 	end)
 	self:Connect(Input.InputEnded, function(input)
+		self:ReleaseButtons(input, false)
 		local pointer = self.Pointer
 		if pointer and (input == pointer.Input or (pointer.Input.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseButton1)) then self:_EndPointer() end
 	end)
@@ -692,10 +847,19 @@ function UI:_Bind()
 		local handler = self.KeyboardHandlers[GuiService.SelectedObject]
 		if handler then handler(input.KeyCode) end
 	end)
-	self:Connect(Input.WindowFocusReleased, function() self:_EndPointer(); self.TooltipBox.Visible = false end)
+	self:Connect(Input.WindowFocusReleased, function() self:_EndPointer(); self:ReleaseButtons(nil, true); self.TooltipBox.Visible = false end)
 	self:Connect(self.Root:GetPropertyChangedSignal("AbsoluteSize"), function() self:_Layout() end)
-	self:Connect(self.Background:GetPropertyChangedSignal("Image"), function() self:_Layout() end)
-	self:Connect(self.Background:GetPropertyChangedSignal("IsLoaded"), function() self:_Layout() end)
+	self:Connect(self.Gui:GetPropertyChangedSignal("Enabled"), function()
+		if self.Gui.Enabled and self.Open then self:_StartClock()
+		else
+			self:_StopClock()
+			self:_EndPointer()
+			self:ReleaseButtons(nil, true)
+			self.TooltipBox.Visible = false
+			for owner in pairs(self.TooltipOwners) do self:CancelDelay(owner) end
+			if self.VFX then self.VFX:CancelGroup("interaction", true) end
+		end
+	end)
 	self:Connect(self.Gui.Destroying, function() self:Destroy(true) end)
 end
 
@@ -718,6 +882,7 @@ function UI.new(playerGui, theme, assets)
 	local self = setmetatable({
 		PlayerGui = playerGui, Theme = theme, Assets = assets, Connections = {}, Threads = {},
 		Scopes = {}, AlphaEntries = {}, AlphaLookup = {}, KeyboardHandlers = {}, TooltipOwners = {}, Pages = {}, Navigation = {},
+		ButtonStyles = {}, ButtonLookup = {}, Appearance = {}, WindowSize = 1,
 		Order = 0, Open = false, Destroyed = false, ActivePage = "Home", ActiveSeconds = 0,
 		SuppressLauncherUntil = 0, LogoDetached = false, Positioned = false,
 	}, UI)

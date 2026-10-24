@@ -13,9 +13,9 @@ check(#ui.Pages.Main:GetChildren()==1,'default page has layout only; no gameplay
 check(math.abs(ui.Background.ImageTransparency-.38)<1e-8,'background transparency reveals supplied artwork')
 check(ui.LogoFallback==nil and ui.LauncherFallback==nil and #ui.Logo:GetChildren()==0,'no native sigil drawn over the wordmark or reopen button')
 check(ui.Logo.Name=='DraggableWordmark' and ui.Launcher.Name=='Reopen','wordmark header and minimized launcher are separate')
-check(ui.Logo.Size.X.Offset==174 and ui.Logo.Size.Y.Offset==48,'new wordmark fits the standard header')
+check(ui.Logo.Size.X.Offset==170 and ui.Logo.Size.Y.Offset==44,'new wordmark fits the standard header')
 check(#ui.Sidebar:GetChildren()==2,'bottom-left sidebar arch and sigil are removed')
-check(ui.Theme.Layout.Width==940 and ui.Theme.Layout.Height==528,'window follows compact 16:9 dimensions')
+check(ui.Theme.Layout.Width==860 and ui.Theme.Layout.Height==480,'window is smaller than the previous 940x528 layout')
 check(type(ui.Assets.LoadFromRepository)=='function','optional local artwork loader remains separate from UI')
 check(ui.Assets.Resolve('BACKGROUND_ASSET_ID')=='' and ui.Assets.Resolve('123')=='rbxassetid://123','asset placeholders and numeric IDs')
 local missingUri,missingStatus=ui.Assets.LoadFromRepository('Background')
@@ -42,13 +42,15 @@ ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=false; ui:_Layout
 check(ui.Brand==nil,'native FAITHFUL header text is replaced by the image wordmark')
 ui.Background.IsLoaded=true
 ui.Background.Image=''; ui.Background.IsLoaded=false
-check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==12 and #ui.VFX.Embers==14,'Ultra uses bounded pools and one loop')
+check(ui.VFX.Heartbeat~=nil and #ui.VFX.Mist==18 and #ui.VFX.Embers==18,'Ultra uses bounded pools and one loop')
 check(not ui.VFX.Mist[1].Node.Visible,'unconfigured smoke has no fake asset')
 local instanceCount=#ui.Gui:GetDescendants()
+ui.VFX:SetSmokeImage('rbxassetid://123')
+check(ui.VFX.Mist[1].Node.Visible and not ui.VFX.SmokeReady,'assigned smoke is visible before IsLoaded: no visibility/load deadlock')
 ui.VFX.Mist[1].Node.IsLoaded=true
-ui.VFX.SmokeReady=true
 Mock.Step(1)
-check(ui.VFX.Mist[1].Node.Visible and ui.VFX.Mist[1].Node.ImageTransparency>.7,'mist runs with restrained opacity after load')
+check(ui.VFX.Mist[1].Node.Visible and ui.VFX.Mist[1].Node.ImageTransparency>.5,'exterior mist opacity remains bounded')
+check(ui.VFX.Mist[13].Interior and ui.VFX.Mist[13].Node.ImageTransparency>.8,'interior mist stays behind controls and faint')
 local maxVisible=0
 for i=1,50 do
  Mock.Step(.1)
@@ -57,11 +59,95 @@ for i=1,50 do
  maxVisible=math.max(n,maxVisible)
 end
 check(maxVisible<=2,'border never lights more than two adjoining segments')
+check(not ui.Window.ClipsDescendants and ui.Surface.ClipsDescendants,'outer atmosphere can escape the clipped artwork surface')
+check(ui.VFX.Mist[1].Node.Parent==ui.MistLayer and ui.VFX.Mist[13].Node.Parent==ui.InnerMistLayer
+ and ui.InnerMistLayer.ZIndex<ui.Content.ZIndex,'exterior and interior mist remain below interactive content')
+check(ui.Appearance.Quality and ui.Appearance.Size and #ui.Pages.Scripts:GetChildren()==1,'appearance controls exist without adding gameplay or script execution')
+ui:SelectCategory('Visuals'); Mock.Step(.4)
+local qualityStyle=ui.ButtonLookup[ui.Appearance.Quality.Button]
+check(qualityStyle.Caption.Text=='Ultra  +' and qualityStyle.Caption.ZIndex>qualityStyle.Sheen.ZIndex,'dropdown value is drawn above its metal skin')
+ui.Appearance.Quality.Button.Activated:Fire(); ui.Appearance.Quality.Items[2].Activated:Fire(); Mock.Step(.2)
+check(ui.VFX.Quality=='Balanced' and ui.QualityBadge.Text=='BALANCED' and qualityStyle.Caption.Text=='Balanced  +','quality control updates effects and both captions')
+ui.Appearance.Quality:Set('Ultra')
+local function visibleCount(pool)
+ local count=0
+ for _,particle in ipairs(pool) do if particle.Node.Visible then count+=1 end end
+ return count
+end
+ui.Appearance.Mist.Button.Activated:Fire(); Mock.Step(.1)
+check(not ui.VFX.Enabled.Mist and visibleCount(ui.VFX.Mist)==0 and visibleCount(ui.VFX.Embers)==18,'mist toggle is independent of embers')
+ui.Appearance.Mist.Button.Activated:Fire()
+ui.Appearance.Embers.Button.Activated:Fire(); Mock.Step(.1)
+check(not ui.VFX.Enabled.Embers and visibleCount(ui.VFX.Embers)==0 and visibleCount(ui.VFX.Mist)==18,'embers toggle is independent of mist')
+ui.Appearance.Border.Button.Activated:Fire(); Mock.Step(.1)
+local litEdges=0
+for _,edge in ipairs(ui.VFX.Edges) do if edge.Host.Visible then litEdges+=1 end end
+check(litEdges==0 and not ui.VFX.Enabled.Border,'border toggle extinguishes every moving segment')
+ui.Appearance.Embers.Button.Activated:Fire(); ui.Appearance.Border.Button.Activated:Fire()
+ui.Appearance.Intensity:Set(100); Mock.Step(.3)
+local alphaWithinLimits=true
+for _,particle in ipairs(ui.VFX.Mist) do
+ if particle.Node.ImageTransparency < (particle.Interior and .8 or .32)-1e-6 then alphaWithinLimits=false end
+end
+check(ui.VFX.Intensity==1 and alphaWithinLimits,'full mist intensity still caps opacity separately inside and outside')
+ui.Appearance.Intensity:Set(0); Mock.Step(.1)
+check(visibleCount(ui.VFX.Mist)==0,'zero mist intensity hides its pool')
+ui.Appearance.Intensity:Set(72)
+ui.Appearance.Background:Set(75)
+check(math.abs(ui.Background.ImageTransparency-.25)<1e-6,'background slider changes only image opacity')
+ui.Appearance.Background:Set(62)
+check(#ui.Gui:GetDescendants()==instanceCount,'appearance changes reuse existing objects')
+
+-- Press/hover effects share one reflection, reset on focus loss and honor reduced motion.
+local homeButton=ui.Navigation.Home.Button
+local homeStyle=ui.ButtonLookup[homeButton]
+homeButton.MouseEnter:Fire()
+local press=Mock.Pointer('MouseButton1',30,120)
+homeButton.InputBegan:Fire(press); Mock.Step(.18)
+check(math.abs(homeStyle.Scale.Scale-.975)<1e-6 and homeStyle.Energy.Value==1,'button press compresses its native metal face')
+ui.Minimize.MouseEnter:Fire(); Mock.Step(.12)
+local reflectionCount=0
+for _,style in ipairs(ui.ButtonStyles) do if style.Sheen.BackgroundTransparency<1 then reflectionCount+=1 end end
+check(reflectionCount==1 and ui.VFX.Reflection.Record.Button==ui.Minimize,'one shared reflection replaces the previous one')
+Input.WindowFocusReleased:Fire(); Mock.Step(.2)
+check(homeStyle.Pressed==nil and not homeStyle.Hover and homeStyle.Scale.Scale==1 and homeStyle.Energy.Value==0,'focus loss restores pressed and hovered button states')
+ui.VFX:SetReducedMotion(true)
+homeButton.InputBegan:Fire(press); Mock.Step(.2)
+check(homeStyle.Scale.Scale==1 and ui.VFX.Reflection==nil,'reduced motion suppresses press scaling and reflections')
+Input.InputEnded:Fire(press); ui.VFX:SetReducedMotion(false)
+
+-- Resizing via a captured touch slider must not cancel its own gesture.
+ui:SelectCategory('Settings'); Mock.Step(.4)
+local sizeButton=ui.Appearance.Size.Button
+local resizeTouch=Mock.Pointer('Touch',sizeButton.AbsolutePosition.X+sizeButton.AbsoluteSize.X*.4,sizeButton.AbsolutePosition.Y+20)
+sizeButton.InputBegan:Fire(resizeTouch)
+check(ui.Pointer~=nil and not ui.Pages.Settings.ScrollingEnabled and ui.Window.AbsoluteSize.X<860,'size slider retains touch capture while resizing')
+resizeTouch.Position=vec(sizeButton.AbsolutePosition.X+sizeButton.AbsoluteSize.X*.7,sizeButton.AbsolutePosition.Y+20)
+Input.InputChanged:Fire(resizeTouch); Input.InputEnded:Fire(resizeTouch)
+check(ui.Pointer==nil and ui.Pages.Settings.ScrollingEnabled,'slider release restores page scrolling')
+ui:ResetLayout()
+check(ui.Window.AbsoluteSize.X==860 and ui.Appearance.Size.Value==100 and not ui.LogoDetached,'reset restores base dimensions and attached wordmark')
+local titleTouch=Mock.Pointer('Touch',ui.PageTitle.AbsolutePosition.X,ui.PageTitle.AbsolutePosition.Y+10)
+ui.TitleDragHandle.InputBegan:Fire(titleTouch)
+ui.Background.Image='rbxassetid://123'; ui.Background.IsLoaded=true
+check(ui.Pointer~=nil,'artwork finishing loading does not interrupt an active drag')
+local beforeTitleDrag=ui.Window.Position.X.Offset
+titleTouch.Position=titleTouch.Position+vec(35,20); Input.InputChanged:Fire(titleTouch); Input.InputEnded:Fire(titleTouch)
+check(ui.Window.Position.X.Offset==beforeTitleDrag+35 and ui.Pointer==nil,'page title offers a second touch-friendly window drag area')
+local rightLimit=ui:_ClampPosition(ui.Window,vec(10000,10000),'window')
+check(rightLimit.X+ui.Content.Position.X.Offset+44<=ui.Root.AbsoluteSize.X
+ and rightLimit.Y+ui.Content.Position.Y.Offset+44<=ui.Root.AbsoluteSize.Y,'partially offscreen placement retains a recoverable title drag area')
+
+local timeBeforeDisable=ui.ActiveSeconds+(ui.ClockStart and Mock.Now-ui.ClockStart or 0)
+ui.Gui.Enabled=false; Mock.Step(2)
+check(ui.VFX.Heartbeat==nil and ui.ClockStart==nil and math.abs(ui.ActiveSeconds-timeBeforeDisable)<1e-6,'disabling ScreenGui suspends ambient work and active timer')
+ui.Gui.Enabled=true; Mock.Step(.3)
+check(ui.VFX.Heartbeat~=nil and ui.ClockStart~=nil and ui.Open,'reenabling ScreenGui resumes the same interface')
 ui:SelectCategory('Main'); Mock.Step(.03)
 ui:SelectCategory('Visuals'); Mock.Step(.04)
 ui:SelectCategory('Settings'); Mock.Step(.5)
 check(ui.ActivePage=='Settings' and ui.Pages.Settings.Visible and not ui.Pages.Main.Visible and not ui.Pages.Visuals.Visible,'rapid navigation keeps latest request')
-check(ui.VFX.Factors['page:Settings'].Value==1 and ui.Pages.Settings.Position.Y.Offset==66,'navigation restores alpha and position')
+check(ui.VFX.Factors['page:Settings'].Value==1 and ui.Pages.Settings.Position.Y.Offset==ui.Theme.Layout.PageTop,'navigation restores alpha and position')
 for i=1,30 do
  ui:SetOpen(false); Mock.Step(.04); ui:SetOpen(true); Mock.Step(.04)
  ui:SelectCategory(i%2==0 and 'Main' or 'Home')

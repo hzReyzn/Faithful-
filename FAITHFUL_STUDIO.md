@@ -1,17 +1,18 @@
 # FAITHFUL — Gothic UI & Ultra VFX
 
-Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propia interfaz; no altera personajes, jugadores ni mecánicas. Versión 1.0.0.
+Interfaz nativa de Roblox en Luau. Solo presenta controles y efectos de la propia interfaz; no altera personajes, jugadores ni mecánicas. Versión 1.0.0, revisión `crimson-mist-polish-20261024`.
 
 ## Resultado y decisiones visuales
 
 - La tercera imagen guía la distribución: cabecera, navegación izquierda, contenido derecho y bordes finos. Se eliminó el adorno de arco y sigilo de la esquina inferior izquierda por petición del autor.
 - La primera imagen se usa como arte de fondo, sin modificar sus píxeles. La segunda se conserva como logo del botón para reabrir la ventana. El nuevo texto gótico `FAITHFUL` ocupa el espacio del logo en la cabecera.
-- Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Las páginas contienen su título y espacio limpio; no hay Movement, Player, Protection, Utilities ni funciones de juego.
-- No hay un texto FAITHFUL nativo superpuesto: el encabezado usa exclusivamente `assets/FaithfulWordmark.png` (174 × 48 como tamaño de GUI, 108 × 36 en pantallas estrechas).
-- La ventana predeterminada pasa a **940 × 528** (aproximadamente 16:9), manteniendo adaptación a pantallas pequeñas.
-- El fondo usa **0.38** de `ImageTransparency` (62% opacidad) para que la ilustración resulte visible, sin modificar los píxeles del PNG.
-- Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar y continúa al reabrir. Una sesión nueva comienza en cero.
-- Se arrastra la ventana desde la cabecera con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo un tramo de cabecera recuperable. El texto de cabecera puede arrastrarse por separado; tras moverlo deja de seguir a la ventana. El pequeño botón de reapertura mantiene el logo cuadrado original y también es arrastrable.
+- Solo aparecen **Home, Main, Visuals, Scripts y Settings**. Home, Main y Scripts mantienen su título y espacio limpio; Visuals y Settings incluyen ajustes de apariencia de Faithful; no hay Movement, Player, Protection, Utilities ni funciones de juego.
+- No hay un texto FAITHFUL nativo superpuesto: el encabezado usa exclusivamente `assets/FaithfulWordmark.png` (170 × 44 como tamaño de GUI, 108 × 36 en pantallas estrechas).
+- La ventana predeterminada pasa a **860 × 480**, frente a los 940 × 528 anteriores, manteniendo adaptación a pantallas pequeñas.
+- El fondo mantiene **0.38** de `ImageTransparency` (62% opacidad base). Un gradiente de alfa oculta la zona del título incrustado en la parte superior para dar protagonismo al texto de cabecera. Los bytes del PNG permanecen intactos. Con otro fondo sin título, establece `BackgroundContainsTitle = false`.
+- Se reemplaza ONLINE por `HH:MM:SS`. El contador suma el tiempo que la ventana está abierta. Se pausa al minimizar/cerrar o desactivar el ScreenGui, y continúa al volver a mostrarlo. Una sesión nueva comienza en cero.
+- Se arrastra la ventana desde la cabecera o el área del título de la página con ratón o un dedo. Puede quedar parcialmente fuera de los laterales, manteniendo visible un área de arrastre recuperable. El texto de cabecera puede arrastrarse por separado; tras moverlo deja de seguir a la ventana. El pequeño botón de reapertura mantiene el logo cuadrado original y también es arrastrable.
+- El marco tiene doble borde metálico, biseles de esquina, halo carmesí localizado y sombra suave. Los botones usan capas de metal y carmesí con respuesta a presión y un único reflejo compartido.
 - Cerrar solicita confirmación y oculta la interfaz. El logo de reapertura permite volver. Destruir el `ScreenGui` retira por completo sus recursos.
 
 ## Archivos
@@ -91,48 +92,59 @@ En `FaithfulTheme`:
 Quality = "Ultra",               -- "Minimal", "Balanced" o "Ultra"
 ReduceMotion = false,
 RespectSystemReduceMotion = true,
-MistIntensity = 0.24,
-ShowcaseControls = false,        -- Mantiene la presentación limpia solicitada
+MistIntensity = 0.72,           -- Intensidad normalizada: 0–1
+Effects = { Mist = true, Embers = true, Border = true },
+AppearanceControls = true,      -- Controles de la propia UI en Visuals y Settings
+ShowcaseControls = false,       -- Demostración genérica opcional en Main
 ```
 
 | Nivel | Niebla | Partículas | Borde y pulso | Bucle ambiental |
 | --- | --- | --- | --- | --- |
 | Minimal | 0 | 0 | Selección fija y transiciones básicas | Ninguno |
 | Balanced | 0 | Hasta 6 | Animados | Un Heartbeat, actualizaciones limitadas a 30 Hz |
-| Ultra | Hasta 12 capas | Hasta 14 | Animados | El mismo Heartbeat, 30 Hz |
+| Ultra | Hasta 18 capas | Hasta 18 | Animados | El mismo Heartbeat, 30 Hz |
 
-Las doce capas y catorce partículas se crean una sola vez y se reutilizan. Cambiar la calidad no crea un nuevo conjunto. Los niveles cambian la actividad, no prometen un FPS concreto. La frecuencia de actualización de los efectos es independiente de la frecuencia de renderizado del dispositivo.
+Las dieciocho capas y dieciocho partículas se crean una sola vez y se reutilizan. Cambiar la calidad no crea un nuevo conjunto. Los niveles cambian la actividad, no prometen un FPS concreto. La frecuencia de actualización de los efectos es independiente de la frecuencia de renderizado del dispositivo.
 
 Con movimiento reducido, se detienen la niebla, las partículas, el recorrido del borde y el pulso continuo. Las transiciones se limitan a un fundido breve, sin desplazamiento de páginas. También se respeta la preferencia de accesibilidad de Roblox cuando la API está disponible.
 
-Si activas `ShowcaseControls`, **Main** muestra botón, toggle, slider, dropdown, campo de texto, separador, tooltip, notificación y confirmación. **Settings** ofrece calidad, movimiento reducido e intensidad de niebla. Los ejemplos solo afectan a estado local de la UI. Esta opción permanece desactivada en la entrega para mantener únicamente las cinco categorías visibles.
+Los controles de apariencia vienen activados:
+
+- **Visuals:** calidad, Crimson Mist, intensidad de niebla, partículas, bordes animados y opacidad del fondo. La insignia de calidad de la cabecera también abre esta página.
+- **Settings:** reducir movimiento, tamaño del 78% al 100% del nuevo tamaño base y restablecer posición/tamaño. El texto de cabecera vuelve a quedar unido a la ventana al restablecer.
+
+No afectan al mundo ni ejecutan código. Si prefieres las cinco páginas vacías, desactiva `AppearanceControls`. El ajuste de tamaño conserva el gesto táctil durante el arrastre del slider.
+
+Si activas `ShowcaseControls`, **Main** añade una demostración genérica de botón, toggle, slider, dropdown, campo de texto, separador, tooltip, notificación y confirmación. Esa demostración permanece desactivada en la entrega.
 
 La API de construcción incluye `Button`, `Toggle`, `Slider`, `Dropdown`, `TextField`, `Separator`, `Tooltip`, `Notify` y `Confirm`. Toggle, Slider y Dropdown devuelven `Set(value, silent)`; TextField expone su `Box` nativo. Los callbacks son explícitos. No se evalúa el texto de los cuadros de entrada ni se ejecutan scripts desde la pestaña Scripts.
 
 ## 5. Cómo están hechos los VFX
 
-**Crimson Mist:** un sprite transparente compartido, doce capas en tres profundidades, ciclos de aproximadamente 8–16 segundos, deriva lateral sinusoidal, expansión gradual y una envolvente de opacidad que llega a cero antes de reiniciar. Las emisiones se concentran en las zonas inferiores izquierda y derecha. El núcleo luminoso es el de menor opacidad; no hay mezcla aditiva ni una llama sólida.
+**Crimson Mist:** un sprite transparente compartido, dieciocho capas en tres profundidades y ciclos de aproximadamente 8–14 segundos. Doce capas se extienden por el borde inferior y los laterales; seis quedan dentro de la superficie recortada. Las exteriores pueden salir del marco, por detrás de su superficie. La deriva irregular, la expansión y los ciclos de opacidad producen humo ancho, sin silueta de llama. Con la intensidad predeterminada, la opacidad máxima por capa es aproximadamente 49% fuera y 14% dentro; el sprite y su gradiente atenúan aún más estos valores, y la superposición de capas puede aumentar la opacidad conjunta. Las capas rojizas más luminosas son más tenues. Los controles se dibujan por encima.
+
+La existencia de una URI válida permite mostrar la capa aunque `IsLoaded` todavía sea falso: ese indicador se conserva como diagnóstico, sin bloquear la visibilidad. Esto evita depender de la carga de una imagen que el código mantiene oculta. Los recursos moderados, sin permisos o inaccesibles siguen requiriendo corregir su ID/carga.
 
 **Crimson Border Flow:** un tramo estrecho viaja alrededor del perímetro. En las esquinas puede repartirse entre dos lados contiguos; nunca ilumina todo el borde a la vez.
 
-**Ghoul Embers:** catorce puntos como máximo, pequeños y semitransparentes, cerca de los laterales. No se crean instancias en cada ciclo.
+**Ghoul Embers:** dieciocho puntos como máximo, pequeños y semitransparentes, cerca de los laterales. No se crean instancias en cada ciclo.
 
 **Obsidian Transitions:** la última categoría solicitada gana. Se cancelan las animaciones anteriores y se normalizan posición y opacidad para impedir páginas superpuestas o fundidos acumulativos.
 
-**Crimson Pulse:** el borde de la categoría seleccionada varía suavemente; la selección sigue siendo legible al desactivar el movimiento.
+**Crimson Pulse y reflejos:** la categoría seleccionada mantiene un lavado carmesí tenue y un gradiente metálico móvil. La presión comprime únicamente la cara del botón a 0.975; no cambia su área de entrada. Un solo reflejo diagonal recorre un botón a la vez, por interacción o aproximadamente cada 6.5 segundos. Con movimiento reducido desaparecen los reflejos, el pulso y la compresión; la selección sigue siendo legible.
 
 **Faithful Entrance:** fundido breve de ventana/fondo, aparición ligeramente retrasada del logo y comienzo del borde y de la niebla. La reapertura completa no impone una introducción larga.
 
-La opacidad parte de valores base inmutables y factores por grupo. No se usan `CanvasGroup` de pantalla completa. No hay conexiones a `PreRender`, modificaciones de `Lighting` ni efectos 3D sobre el mundo. El bucle ambiental se desconecta al ocultar. Al destruir se cancelan tweens, temporizadores y precarga pendiente, y se desconectan los eventos.
+La opacidad parte de valores base inmutables y factores por grupo. No se usan `CanvasGroup` de pantalla completa. No hay conexiones a `PreRender`, modificaciones de `Lighting` ni efectos 3D sobre el mundo. El único bucle ambiental se desconecta al ocultar o desactivar el ScreenGui. La reducción de movimiento deja la selección estática; la calidad Minimal tampoco mantiene un bucle ambiental. Al destruir se cancelan tweens, temporizadores y precarga pendiente, y se desconectan los eventos.
 
 ## 6. Pruebas en Roblox Studio
 
-1. **Primera apertura:** revisa Output, carga de las tres imágenes, nitidez, título no duplicado y el reloj en lugar de ONLINE.
+1. **Primera apertura:** revisa Output, carga de las cuatro imágenes, nitidez, título no duplicado y el reloj en lugar de ONLINE.
 2. **Interacciones:** cambia rápidamente entre las cinco categorías; minimiza y reabre varias veces; confirma y cancela el cierre. El estado y el contador deben continuar correctamente.
-3. **Arrastre:** mueve la cabecera, luego el logo por separado. Repite con entrada táctil. Arrastra el botón de reapertura: soltarlo tras moverlo no debe abrir accidentalmente la ventana.
+3. **Arrastre:** mueve la cabecera y el título de página, luego el texto gráfico por separado. Repite con entrada táctil. Arrastra el botón de reapertura: soltarlo tras moverlo no debe abrir accidentalmente la ventana.
 4. **Resoluciones:** prueba teléfono vertical y horizontal, tableta y escritorio con Device Simulator. Verifica áreas seguras, botones de al menos 44 px y navegación desplazable en pantallas bajas.
 5. **Texto y componentes:** activa temporalmente `ShowcaseControls`; verifica límites del slider, dropdown expandible, texto UTF-8, notificaciones y confirmaciones. Restáuralo a `false` para la presentación limpia.
-6. **Accesibilidad:** alterna los tres niveles y la reducción de movimiento. El movimiento ambiental debe desaparecer con esta última activada.
+6. **Apariencia y accesibilidad:** prueba los controles de Visuals y Settings, especialmente el tamaño con un dedo y los interruptores independientes; alterna los tres niveles y la reducción de movimiento. El movimiento ambiental debe desaparecer con esta última activada.
 7. **Rendimiento:** en un teléfono real y en un cliente de escritorio, compara Minimal y Ultra con Developer Console/MicroProfiler. Revisa coste de UI, memoria de texturas y comportamiento tras varias reaperturas. Un límite de 30 Hz no sustituye esta medición.
 8. **Limpieza:** elimina `PlayerGui.Faithful` durante Play o reinicia la inicialización. Debe quedar una sola instancia propia y no deben producirse errores de callbacks sobre la anterior.
 
@@ -155,8 +167,10 @@ Consulta `VALIDATION.md` para separar resultados ejecutados de pruebas pendiente
 
 ## 8. Referencias consultadas
 
-- Código de referencia: [hzReyzn/Experimental — REYZN X UI EXPERIMENTAL](https://github.com/hzReyzn/Experimental/blob/main/REYZN%20X%20UI%20EXPERIMENTAL), blob `64c05792b807afe1fbc12f4234428923684a777c`. Se revisaron especialmente `UpdraftFire`, reutilización de capas, opacidad y actualización ambiental. No se trasladaron funciones de juego ni lanzadores externos.
-- Destino solicitado: [hzReyzn/Faithful- — Faithful Exploit](https://github.com/hzReyzn/Faithful-/blob/main/Faithful%20Exploit). El archivo remoto examinado estaba vacío salvo un salto de línea; su blob era `8b137891791fe96927ad78e64b0aad7bded08bdc`.
+- Código de referencia: [hzReyzn/Experimental — REYZN X UI EXPERIMENTAL](https://github.com/hzReyzn/Experimental/blob/main/REYZN%20X%20UI%20EXPERIMENTAL), blob `64c05792b807afe1fbc12f4234428923684a777c`. Se revisaron especialmente `UpdraftFire`, `NeonFlow`, el sistema de reflejo único y la presión de botones. Se reutilizan sus ideas de capas, fases, superficies metálicas y opacidad con una implementación nueva de niebla carmesí. No se trasladaron funciones de juego ni lanzadores externos.
+- Destino solicitado: [hzReyzn/Faithful- — Faithful Exploit](https://github.com/hzReyzn/Faithful-/blob/main/Faithful%20Exploit). Esta revisión parte del commit `3da081c62a7d6110e5941bdcef94c00f1b787757`, cuyo archivo tenía el blob `8e3984743d400afab931a411f519223a2df4b605`. Conserva el texto de cabecera más reciente y la eliminación del adorno inferior izquierdo.
+- [Roblox: gradientes de UI](https://create.roblox.com/docs/reference/engine/classes/UIGradient).
+- [Roblox: carga de ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel#IsLoaded).
 - [Roblox: animación de UI](https://create.roblox.com/docs/ui/animation).
 - [Roblox: áreas seguras de ScreenGui](https://create.roblox.com/docs/reference/engine/classes/ScreenGui).
 - [Roblox: movimiento reducido](https://create.roblox.com/docs/reference/engine/classes/GuiService/ReducedMotionEnabled).

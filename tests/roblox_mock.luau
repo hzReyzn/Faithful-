@@ -28,7 +28,7 @@ for name, values in pairs({
  Font = {'Gotham','GothamMedium','Garamond'},
  EasingStyle = {'Quad'}, EasingDirection = {'Out'}, ApplyStrokeMode = {'Border'},
  UserInputType = {'MouseButton1','MouseMovement','Touch','Keyboard'},
- TextXAlignment = {'Left','Center','Right'}, TextTruncate = {'AtEnd'},
+ TextXAlignment = {'Left','Center','Right'}, TextTruncate = {'AtEnd','None'},
  KeyCode = {'Unknown','Left','Right','Escape'}, ZIndexBehavior = {'Global'},
  ScreenInsets = {'CoreUISafeInsets'}, ScaleType = {'Fit','Stretch'},
  AutomaticSize = {'Y'}, ScrollingDirection = {'Y'}, SortOrder = {'LayoutOrder'},
